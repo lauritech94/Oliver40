@@ -375,9 +375,9 @@ export default function JudgeDashboard() {
             </table>
           </div>
 
-          <h2 className="mt-8 text-lg font-black">Pruebas sociales</h2>
+          <h2 className="mt-8 text-lg font-black">Preguntas trampa</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Escribe aquí las preguntas de tu encuesta y sus respuestas. Si una tarjeta se queda sin respuesta, se marca para que la escribas en ✏️ Editar preguntas.
+            Todas se validan solas. Aquí tienes la respuesta correcta por si alguien discute.
           </p>
           <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-800">
             <table className="w-full text-left text-sm">
@@ -391,7 +391,7 @@ export default function JudgeDashboard() {
               </thead>
               <tbody>
                 {allTasks
-                  .filter((task) => task.typeSlug === "interaccion-social")
+                  .filter((task) => task.typeSlug === "trampa")
                   .sort((a, b) => a.cardNumber - b.cardNumber)
                   .map((task) => {
                     const owner = state.players.find((p) => p.id === task.playerId);

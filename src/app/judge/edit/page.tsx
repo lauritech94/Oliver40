@@ -40,19 +40,19 @@ type GameState = {
 /** Dónde está el texto original de cada tipo, por si prefieres editarlo en el código. */
 const SOURCE: Record<string, { file: string; note: string }> = {
   acertijo: { file: "src/lib/content/static.ts", note: "lista ACERTIJOS" },
-  interaccion_social: { file: "(tu encuesta)", note: "escribe la pregunta y la respuesta directamente aquí" },
+  trampa: { file: "src/lib/content/extras.ts", note: "lista TRAMPAS" },
   anagrama: { file: "src/lib/content/words.ts", note: "lista ANAGRAMS" },
   emoji: { file: "src/lib/content/static.ts", note: "lista EMOJI_PUZZLES" },
   logica: { file: "src/lib/generators.ts", note: "función genLogic() (números al azar)" },
   "codigo-escondido": { file: "src/lib/content/words.ts", note: "lista CODE_WORDS · la tabla está en generators.ts (keyNumbers)" },
-  nonograma: { file: "src/lib/content/nonograms.json", note: "rejillas de 5×5" },
+  puzzle: { file: "src/lib/content/extras.ts", note: "fotos PUZZLE_IMAGES y palabras PUZZLE_WORDS" },
   foto: { file: "src/lib/content/static.ts", note: "lista FOTOS · palabras en words.ts (SECRET_WORDS)" },
   "sopa-de-letras": { file: "src/lib/generators.ts", note: "función genSopa() · temas en words.ts (SOPA_THEMES)" },
   secuencia: { file: "src/lib/generators.ts", note: "función genSeries() (números al azar)" },
   "formula-palabras": { file: "src/lib/content/static.ts", note: "lista COMPOUNDS · operaciones en generators.ts" },
   cultura: { file: "src/lib/content/static.ts", note: "listas CULTURA y COUNTRIES" },
   memoria: { file: "src/lib/generators.ts", note: "función genMemory()" },
-  busqueda: { file: "src/lib/generators.ts", note: "lista SEARCH_SPOTS (adivinanzas y escondites)" },
+  busqueda: { file: "src/lib/content/extras.ts", note: "lista FRIDGE_CLUES (12 pistas de la nevera)" },
   "quien-soy": { file: "src/lib/content/static.ts", note: "lista QUIEN_SOY" },
 };
 

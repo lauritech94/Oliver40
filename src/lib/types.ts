@@ -8,6 +8,8 @@ export type TaskMeta = {
   memorize?: { text: string; seconds: number };
   /** Pistas del nonograma interactivo. */
   nonogram?: NonogramData;
+  /** Puzzle interactivo de casillas (imagen partida en una rejilla). */
+  puzzle?: { image: string; size: number; word: string };
 };
 
 /** Una prueba concreta, ya generada para un jugador. */

@@ -9,19 +9,15 @@ import {
   FOTOS,
   QUIEN_SOY,
 } from "./content/static";
-import { PROFILE_FIELDS } from "./content/profile";
+import { fridgeDrafts, puzzleDrafts, trampaDrafts } from "./content/extras";
 import {
   CODE_KEYS,
-  NONOGRAMS,
-  SEARCH_SPOTS,
   compoundDraft,
   genCapital,
   genCode,
   genFormulaOps,
   genLogic,
   genMemory,
-  genNonogram,
-  genSearch,
   genSeries,
   genSopa,
   scramble,
@@ -105,31 +101,15 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
       })),
   },
   {
-    slug: "interaccion-social",
-    name: "Interacción social",
-    icon: "🗣️",
+    slug: "trampa",
+    name: "Pregunta trampa",
+    icon: "🪤",
     summary:
-      "Hay que encontrar a OTRO jugador concreto y sacarle un dato de su ficha (color favorito, ciudad soñada…). La respuesta sale de la ficha que ese jugador rellenó: el juez no tiene que preparar nada.",
+      "Preguntas aparentemente fáciles cuya respuesta obvia es la mala. Hay que pensar antes de contestar.",
     requiresJudge: false,
-    material: "Personas 😄 (cada jugador rellena su ficha)",
-    pool: "1 objetivo distinto por jugador (nadie repite)",
-    build: (players) => {
-      const order = shuffle(players);
-      const targetOf = new Map<number, PlayerInfo>();
-      order.forEach((p, i) => targetOf.set(p.id, order[(i + 1) % order.length]));
-      const fields = deal(PROFILE_FIELDS, players.length);
-      return players.map((p, i) => {
-        const target = targetOf.get(p.id) ?? p;
-        const field = fields[i];
-        return {
-          title: `Social: ${field.short}`,
-          prompt: `Busca a ${target.name} entre los invitados y averigua ${field.ask}.\n\nHabla con esa persona (sin enseñarle el móvil) y escribe aquí su respuesta.`,
-          answer: "",
-          hint: "Pregúntale con disimulo… ¡o sin él! 😉",
-          meta: { profile: { targetPlayerId: target.id, field: field.key } },
-        };
-      });
-    },
+    material: "Nada",
+    pool: "28 preguntas trampa",
+    build: (players) => trampaDrafts(players.length),
   },
   {
     slug: "anagrama",
@@ -178,10 +158,10 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
     name: "Código escondido",
     icon: "🗝️",
     summary:
-      "Un papel escondido en una habitación trae la tabla número→letra. En la app aparece una secuencia de números que hay que descifrar. Cada jugador tiene una palabra distinta.",
+      "Un papel escondido en un libro trae la tabla número→letra. En la app aparece una secuencia de números que hay que descifrar. Cada jugador tiene una palabra distinta.",
     requiresJudge: false,
-    material: `${CODE_KEYS.length} papeles de clave escondidos (se imprimen en /material)`,
-    pool: `${CODE_KEYS.length} claves × ${CODE_WORDS.length} palabras`,
+    material: "1 papel de clave escondido (se imprime en /material)",
+    pool: `1 clave compartida × ${CODE_WORDS.length} palabras`,
     build: (players) => {
       const words = deal(CODE_WORDS, players.length);
       const keys = deal(CODE_KEYS, players.length);
@@ -189,25 +169,25 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
     },
   },
   {
-    slug: "nonograma",
-    name: "Nonograma",
-    icon: "⬛",
+    slug: "puzzle",
+    name: "Puzzle 8×8",
+    icon: "🧩",
     summary:
-      "Rejilla 5×5 interactiva con pistas. Al resolverla aparece dibujada una letra, un número o una figura: esa es la respuesta. Todas tienen solución única.",
+      "Una foto partida en 64 casillas desordenadas. Toca dos casillas para intercambiarlas y reconstruir la imagen. Al completarla aparece una palabra.",
     requiresJudge: false,
     material: "Nada (se resuelve en el móvil)",
-    pool: `${NONOGRAMS.length} figuras con solución única`,
-    build: (players) => deal(NONOGRAMS, players.length).map(genNonogram),
+    pool: "4 fotos · 64 casillas por jugador",
+    build: (players) => puzzleDrafts(players),
   },
   {
     slug: "foto",
     name: "Foto con pose",
     icon: "📸",
     summary:
-      "Montar una foto concreta (gente, pose, objeto) y enseñársela a un juez, que da una PALABRA SECRETA distinta para cada prueba.",
+      "Montar una foto concreta (gente, pose, objeto). Se enseña al juez y él da una PALABRA SECRETA distinta para cada prueba.",
     requiresJudge: true,
     material: "Móvil con cámara",
-    pool: `${FOTOS.length} poses · palabra secreta única por prueba`,
+    pool: `${FOTOS.length} retos · palabra secreta única por prueba`,
     build: (players) => {
       const poses = deal(FOTOS, players.length);
       const secrets = deal(SECRET_WORDS, players.length);
@@ -285,17 +265,14 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
   },
   {
     slug: "busqueda",
-    name: "Búsqueda del objeto",
-    icon: "🔎",
+    name: "El código de la nevera",
+    icon: "🧊",
     summary:
-      "Una adivinanza lleva a un escondite donde hay una hoja con una tabla de códigos, uno por jugador. Cada jugador debe leer SU fila.",
+      "Una sola hoja escondida en la nevera con 12 pistas y una regla. Hay que calcular cuáles son tus pistas, resolverlas y formar un código de 4 caracteres.",
     requiresJudge: false,
-    material: `${SEARCH_SPOTS.length} hojas escondidas (se imprimen en /material)`,
-    pool: `${SEARCH_SPOTS.length} escondites · un código distinto por jugador`,
-    build: (players) => {
-      const spots = deal(SEARCH_SPOTS, players.length);
-      return players.map((p, i) => genSearch(spots[i], p.slot));
-    },
+    material: "1 hoja escondida en la puerta de la nevera (se imprime en /material)",
+    pool: "12 pistas · código distinto por jugador",
+    build: (players) => fridgeDrafts(players),
   },
   {
     slug: "quien-soy",

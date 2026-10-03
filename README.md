@@ -259,11 +259,12 @@ la **Fase Final**: dos minijuegos de velocidad y reflejos, y una clasificación 
 
 | Minijuego | Qué se mide | Marca |
 | --------- | ----------- | ----- |
-| ⚡ **Reflejos de Relámpago** | Milisegundos que tardas en pulsar cuando la pantalla se pone verde. 3 rondas, se guarda la mejor. Si pulsas antes, falta. | Menos ms = mejor |
-| 🔢 **Caza de Números** | Tiempo en tocar los números del 1 al 16 en orden. El cronómetro arranca con el primero. | Menos s = mejor |
+| ⚡ **Reflejos de Relámpago** | Milisegundos que tardas en pulsar cuando la pantalla se pone verde. **3 intentos**, se guarda la mejor marca automáticamente. Si pulsas antes, falta. | Menos ms = mejor |
+| 🔢 **Caza de Números** | Tiempo en tocar los números del 1 al 16 en orden. **3 intentos**, se guarda automáticamente. | Menos s = mejor |
 
 * Los jugadores entran desde `/minigames` (o desde el botón que aparece al terminar las 15).
-* Cada jugador puede repetir las veces que quiera: **se guarda siempre su mejor marca**.
+* Cada uno tiene **3 intentos por minijuego**. No hay botones de registro: la marca se guarda sola
+  y siempre se conserva la mejor.
 * La clasificación está en **`/ranking`** y se actualiza sola. Ideal para proyectarla en una tele
   durante la fiesta: hay podio, récord de reflejos, récord de números y tabla general.
 
@@ -291,19 +292,19 @@ Desde `/judge` sigues en tiempo real quién va por dónde y puedes validar a man
 | # | Tipo | Validación |
 |---|------|-----------|
 | 01 | 🧩 Acertijo | Automática |
-| 02 | 🗣️ Interacción social | Automática |
+| 02 | 🪤 Pregunta trampa | Automática |
 | 03 | 🔤 Anagrama | Automática |
 | 04 | 😱 Jeroglífico de emojis | Automática |
 | 05 | 🧠 Lógica | Automática |
 | 06 | 🗝️ Código escondido | Automática |
-| 07 | ⬛ Nonograma (interactivo) | Automática |
+| 07 | 🧩 Puzzle 8×8 (interactivo) | Automática |
 | 08 | 📸 Foto | 🔑 Palabra del juez |
 | 09 | 🔍 Sopa de letras | Automática |
 | 10 | 🔢 Serie numérica | Automática |
 | 11 | 🔡 Fórmula de palabras | Automática |
 | 12 | 🌍 Cultura general | Automática |
 | 13 | 💭 Memoria | Automática |
-| 14 | 🔎 Búsqueda del objeto | Automática |
+| 14 | 🧊 El código de la nevera | Automática |
 | 15 | 🕵️ ¿Quién soy? | Automática |
 
 ---

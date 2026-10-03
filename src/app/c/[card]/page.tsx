@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type PuzzleData = { image: string; size: number; word: string };
 
 type TaskView = {
   id: number;
@@ -17,7 +19,7 @@ type TaskView = {
   hintUsed: boolean;
   requiresJudge: boolean;
   attempts: number;
-  nonogram: { rows: number[][]; cols: number[][] } | null;
+  puzzle: PuzzleData | null;
   memorize: { seconds: number } | null;
 };
 
@@ -62,28 +64,35 @@ export default function CardPage() {
     load();
   }, [load]);
 
+  const send = useCallback(
+    async (value: string) => {
+      setBusy(true);
+      setWrong(false);
+      setPending(false);
+      const res = await fetch(`/api/cards/${card}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer: value }),
+      });
+      const json = await res.json();
+      setBusy(false);
+      if (json.correct) {
+        setSuccess({ nextCard: json.nextCard ?? null, finished: Boolean(json.finished) });
+      } else if (json.pending) {
+        setPending(true);
+      } else {
+        setWrong(true);
+        setAnswer("");
+        load();
+      }
+    },
+    [card, load],
+  );
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!answer.trim()) return;
-    setBusy(true);
-    setWrong(false);
-    setPending(false);
-    const res = await fetch(`/api/cards/${card}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answer }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (json.correct) {
-      setSuccess({ nextCard: json.nextCard ?? null, finished: Boolean(json.finished) });
-    } else if (json.pending) {
-      setPending(true);
-    } else {
-      setWrong(true);
-      setAnswer("");
-      load();
-    }
+    await send(answer.trim());
   }
 
   async function askHint() {
@@ -133,8 +142,8 @@ export default function CardPage() {
     return (
       <Shell>
         <Notice icon="🔐" title="Primero identifícate">
-          Esta tarjeta pertenece a una gymkhana en marcha. Entra con el código de partida y tu
-          nombre: volverás directamente a esta tarjeta.
+          Esta tarjeta pertenece a una gymkhana en marcha. Entra con tu nombre y volverás
+          directamente a esta tarjeta.
         </Notice>
         <Link
           href={`/join?next=/c/${card}`}
@@ -236,7 +245,15 @@ export default function CardPage() {
           {task.prompt}
         </p>
 
-        {task.nonogram && <Nonogram rows={task.nonogram.rows} cols={task.nonogram.cols} />}
+        {task.puzzle && (
+          <Puzzle
+            image={task.puzzle.image}
+            size={task.puzzle.size}
+            word={task.puzzle.word}
+            onSolved={(word) => void send(word)}
+          />
+        )}
+
         {task.memorize && <Memorize card={card} seconds={task.memorize.seconds} />}
 
         {task.requiresJudge && (
@@ -246,23 +263,25 @@ export default function CardPage() {
           </p>
         )}
 
-        <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
-          <input
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder={task.requiresJudge ? "Palabra secreta" : "Tu respuesta"}
-            autoComplete="off"
-            autoCapitalize="none"
-            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-4 text-lg outline-none focus:border-fuchsia-400"
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-xl bg-fuchsia-500 px-6 py-4 text-lg font-black text-white shadow-lg shadow-fuchsia-500/30 disabled:opacity-40"
-          >
-            {busy ? "Comprobando…" : "Comprobar"}
-          </button>
-        </form>
+        {(!task.puzzle || wrong || pending) && (
+          <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
+            <input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder={task.requiresJudge ? "Palabra secreta" : "Tu respuesta"}
+              autoComplete="off"
+              autoCapitalize="none"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-4 text-lg outline-none focus:border-fuchsia-400"
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              className="rounded-xl bg-fuchsia-500 px-6 py-4 text-lg font-black text-white shadow-lg shadow-fuchsia-500/30 disabled:opacity-40"
+            >
+              {busy ? "Comprobando…" : "Comprobar"}
+            </button>
+          </form>
+        )}
 
         {wrong && (
           <p className="mt-4 animate-pulse rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-center text-sm font-semibold text-rose-200">
@@ -297,77 +316,164 @@ export default function CardPage() {
   );
 }
 
-/** Rejilla interactiva: toca para rellenar, otra vez para marcar ✕. */
-function Nonogram({ rows, cols }: { rows: number[][]; cols: number[][] }) {
-  const [cells, setCells] = useState<number[][]>(() =>
-    Array.from({ length: rows.length }, () => Array<number>(cols.length).fill(0)),
-  );
+/* ───────────── Puzzle 8×8: intercambiar casillas para reconstruir la foto ───────────── */
+function Puzzle({
+  image,
+  size,
+  word,
+  onSolved,
+}: {
+  image: string;
+  size: number;
+  word: string;
+  onSolved: (word: string) => void;
+}) {
+  const total = size * size;
+  const [tiles, setTiles] = useState<number[]>(() => scrambledTiles(total));
+  const [selected, setSelected] = useState<number | null>(null);
+  const [hints, setHints] = useState(0);
+  const doneRef = useRef(false);
 
-  function cycle(r: number, c: number) {
-    setCells((prev) =>
-      prev.map((row, ri) => (ri === r ? row.map((v, ci) => (ci === c ? (v + 1) % 3 : v)) : row)),
-    );
+  const solved = tiles.every((value, index) => value === index);
+
+  useEffect(() => {
+    if (solved && !doneRef.current) {
+      doneRef.current = true;
+      onSolved(word);
+    }
+  }, [solved, word, onSolved]);
+
+  function tap(index: number) {
+    if (solved) return;
+    if (selected === null) {
+      setSelected(index);
+      return;
+    }
+    if (selected === index) {
+      setSelected(null);
+      return;
+    }
+    setTiles((prev) => {
+      const next = [...prev];
+      [next[selected], next[index]] = [next[index], next[selected]];
+      return next;
+    });
+    setSelected(null);
+  }
+
+  /** Coloca en su sitio hasta 3 casillas intercambiando (nunca rompe el puzzle). */
+  function giveHint() {
+    setTiles((prev) => {
+      const next = [...prev];
+      const wrong = next.map((v, i) => (v === i ? -1 : i)).filter((i) => i >= 0);
+      for (let k = 0; k < 3 && wrong.length > 0; k += 1) {
+        const pickAt = Math.floor(Math.random() * wrong.length);
+        const idx = wrong.splice(pickAt, 1)[0];
+        if (next[idx] === idx) continue;
+        const cur = next.indexOf(idx);
+        [next[idx], next[cur]] = [next[cur], next[idx]];
+      }
+      return next;
+    });
+    setHints((h) => h + 1);
+    setSelected(null);
   }
 
   return (
     <div className="mt-4 rounded-2xl bg-slate-950/70 p-4">
-      <table className="mx-auto border-separate border-spacing-1">
-        <thead>
-          <tr>
-            <th />
-            {cols.map((col, ci) => (
-              <th key={ci} className="pb-1 align-bottom font-mono text-xs text-cyan-300">
-                <div className="flex flex-col items-center leading-tight">
-                  {col.map((v, i) => (
-                    <span key={i}>{v}</span>
-                  ))}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, ri) => (
-            <tr key={ri}>
-              <td className="whitespace-nowrap pr-2 text-right font-mono text-xs text-cyan-300">
-                {row.join(" ")}
-              </td>
-              {cells[ri].map((v, ci) => (
-                <td key={ci}>
-                  <button
-                    type="button"
-                    onClick={() => cycle(ri, ci)}
-                    className={`h-11 w-11 rounded-md border text-lg font-bold transition ${
-                      v === 1
-                        ? "border-fuchsia-300 bg-fuchsia-500"
-                        : v === 2
-                          ? "border-slate-700 bg-slate-800 text-slate-500"
-                          : "border-slate-700 bg-slate-900"
-                    }`}
-                    aria-label={`fila ${ri + 1} columna ${ci + 1}`}
-                  >
-                    {v === 2 ? "✕" : ""}
-                  </button>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button
-        type="button"
-        onClick={() =>
-          setCells(Array.from({ length: rows.length }, () => Array<number>(cols.length).fill(0)))
-        }
-        className="mx-auto mt-3 block text-xs text-slate-500 hover:text-slate-300"
+      <div className="flex items-center gap-3">
+        <img
+          src={image}
+          alt="Foto de referencia"
+          className="h-20 w-20 rounded-lg border border-slate-700 object-cover"
+        />
+        <div className="flex-1 text-xs text-slate-400">
+          <p className="font-bold text-slate-300">Miniatura de referencia</p>
+          <p className="mt-1">Toca dos casillas para intercambiarlas. Reconstruye la foto.</p>
+          <p className="mt-1 text-slate-500">
+            {tiles.filter((v, i) => v === i).length}/{total} casillas en su sitio
+            {hints > 0 ? ` · ${hints} pista${hints > 1 ? "s" : ""}` : ""}
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="mt-3 grid gap-[2px] rounded-lg border border-slate-700 bg-slate-700 p-[2px]"
+        style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
       >
-        Limpiar rejilla
-      </button>
+        {tiles.map((tileValue, index) => {
+          const row = Math.floor(tileValue / size);
+          const col = tileValue % size;
+          const isRight = tileValue === index;
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => tap(index)}
+              aria-label={`casilla ${index + 1}`}
+              className={`aspect-square w-full rounded-[3px] bg-cover transition-transform ${
+                selected === index ? "scale-95 ring-2 ring-fuchsia-400" : ""
+              } ${isRight ? "ring-1 ring-emerald-500/40" : ""}`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: `${size * 100}% ${size * 100}%`,
+                backgroundPosition: `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {solved ? (
+        <div className="mt-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center">
+          <p className="text-2xl">🎉</p>
+          <p className="mt-1 font-bold text-emerald-200">¡Puzzle completado!</p>
+          <p className="mt-1 text-sm text-emerald-100/70">
+            Enviando la palabra <strong className="font-mono uppercase">{word}</strong>…
+          </p>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={giveHint}
+          className="mt-4 w-full rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
+        >
+          💡 Colocar 3 casillas en su sitio
+        </button>
+      )}
     </div>
   );
 }
 
-/** Enseña la secuencia unos segundos. Cada vez que se pide queda registrado. */
+/**
+ * Baraja dejando una parte de las casillas ya colocadas.
+ * Siempre devuelve una permutación válida (intercambiando valores), de modo que
+ * el puzzle sea siempre resoluble.
+ */
+function scrambledTiles(total: number): number[] {
+  const arr = Array.from({ length: total }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  // Se colocan solas ~45% de las casillas intercambiando: el puzzle sigue siendo un reto pero viable.
+  const pending = Array.from({ length: total }, (_, i) => i);
+  const fix = Math.floor(total * 0.45);
+  for (let k = 0; k < fix; k += 1) {
+    const at = pending.splice(Math.floor(Math.random() * pending.length), 1)[0];
+    if (arr[at] === at) continue;
+    const cur = arr.indexOf(at);
+    [arr[at], arr[cur]] = [arr[cur], arr[at]];
+  }
+
+  if (arr.every((v, i) => v === i)) {
+    [arr[0], arr[1]] = [arr[1], arr[0]];
+  }
+  return arr;
+}
+
+/* ───────────── Memoria: la secuencia solo se ve unos segundos ───────────── */
 function Memorize({ card, seconds }: { card: string; seconds: number }) {
   const [text, setText] = useState<string | null>(null);
   const [left, setLeft] = useState(0);

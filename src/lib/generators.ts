@@ -300,10 +300,10 @@ export type CodeKey = { id: string; name: string; room: string; spot: string };
 
 export const CODE_KEYS: readonly CodeKey[] = [
   {
-    id: "maestro-fridge-v1",
+    id: "maestro-libro-v1",
     name: "CÓDIGO MAESTRO",
-    room: "la puerta de la NEVERA",
-    spot: "Pégalo por dentro de la puerta de la nevera, visible al abrirla.",
+    room: "el interior de un LIBRO de la estantería",
+    spot: "Márcalo con un post-it en un libro grueso de la estantería.",
   },
 ];
 

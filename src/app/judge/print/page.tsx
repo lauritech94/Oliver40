@@ -5,7 +5,8 @@ import PrintButton from "./PrintButton";
 import { ensureFixedGame } from "@/lib/fixed-game";
 import { FIXED_GAME_CODE, FIXED_PLAN_VERSION, FIXED_PLAYER_NAMES } from "@/lib/fixed-plan";
 import { getGameState } from "@/lib/queries";
-import { CODE_KEYS, SEARCH_SPOTS, keyNumbers, searchCode } from "@/lib/generators";
+import { CODE_KEYS, keyNumbers } from "@/lib/generators";
+import { FRIDGE_CLUES, fridgeCode, fridgeClueIndexes } from "@/lib/content/extras";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
   );
   const byCard = [...allTasks].sort((a, b) => a.cardNumber - b.cardNumber);
   const judgeTasks = byCard.filter((task) => task.requiresJudge);
-  const socialTasks = byCard.filter((task) => task.typeSlug === "interaccion-social");
+  const socialTasks = byCard.filter((task) => task.typeSlug === "trampa");
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   const routeRows = state.players.map((player) => ({
     ...player,
@@ -206,12 +207,11 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
 
       <section className="print-section mt-10 print:break-before-page">
         <h2 className="border-b-2 border-slate-950 pb-2 text-2xl font-black">
-          4 · Interacción social (pregunta y respuesta)
+          4 · Preguntas trampa (respuesta correcta)
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Rellena aquí la pregunta de tu encuesta y su respuesta, igual que en el resto de
-          pruebas. Si una casilla sale vacía, escribe la respuesta en «✏️ Editar preguntas» antes
-          del juego.
+          Se validan solas, pero aquí tienes la respuesta por si alguien discute. La respuesta
+          obvia suele ser la mala.
         </p>
         <table className="mt-4 w-full text-left text-xs">
           <thead>
@@ -275,22 +275,62 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
           tiene un código personal distinto. Un jugador puede descubrir el escondite, pero no el
           código de las demás filas.
         </p>
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 print:grid-cols-2">
-          {SEARCH_SPOTS.map((spot) => (
-            <article key={spot.id} className="break-inside-avoid rounded-lg border-2 border-slate-900 p-4">
-              <h3 className="text-lg font-black">HOJA «{spot.name}»</h3>
-              <p className="text-xs text-slate-600">Esconder {spot.place}.</p>
-              <div className="mt-3 grid grid-cols-3 gap-x-4 font-mono text-xs">
-                {Array.from({ length: FIXED_PLAYER_NAMES.length }, (_, index) => index + 1).map((slot) => (
-                  <div key={slot} className="flex justify-between border-b border-slate-200 py-0.5">
-                    <span>J{String(slot).padStart(2, "0")}</span>
-                    <strong>{searchCode(spot.id, slot)}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+        <article className="mt-4 break-inside-avoid rounded-lg border-2 border-slate-900 p-4">
+          <h3 className="text-lg font-black">HOJA «EL CÓDIGO DE LA NEVERA»</h3>
+          <p className="text-xs text-slate-600">
+            Imprime UNA sola copia y pégala por dentro de la puerta de la nevera. Esta hoja NO
+            lleva respuestas.
+          </p>
+          <p className="mt-3 border-y border-slate-300 py-2 text-sm">
+            <strong>1)</strong> Calcula tu PISTA A: suma las dos cifras de tu número de jugador
+            (J07 → 0+7 = 7).<br />
+            <strong>2)</strong> Tu PISTA B es la PISTA (A + 2). Si pasa de 12, quítale 12.
+            <br />
+            <strong>3)</strong> Resuelve esas dos pistas.<br />
+            <strong>4)</strong> Tu código es: <em>inicial de la respuesta A + inicial de la
+            respuesta B + tu número (2 cifras)</em>. Ejemplo: pistas 7 y 9 con respuestas que
+            empiezan por N y R, jugador J07 → <strong>NR07</strong>.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-x-5 text-xs sm:grid-cols-3">
+            {FRIDGE_CLUES.map((clue, index) => (
+              <p key={index} className="border-b border-slate-200 py-1">
+                <strong>{index + 1}.</strong> «{clue.q}»
+              </p>
+            ))}
+          </div>
+        </article>
+
+        <h3 className="mt-6 text-lg font-black">Clave de respuestas (solo jueces)</h3>
+        <table className="mt-2 w-full text-left text-xs">
+          <thead>
+            <tr className="bg-slate-100 uppercase">
+              <th className="px-2 py-1">Jugador</th>
+              <th className="px-2 py-1">Pistas</th>
+              <th className="px-2 py-1">Respuestas</th>
+              <th className="px-2 py-1">Código</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: FIXED_PLAYER_NAMES.length }, (_, index) => index + 1).map((slot) => {
+              const [ia, ib] = fridgeClueIndexes(slot);
+              return (
+                <tr key={slot} className="border-b border-slate-200">
+                  <td className="px-2 py-1 font-mono font-bold">
+                    J{String(slot).padStart(2, "0")} · {FIXED_PLAYER_NAMES[slot - 1]}
+                  </td>
+                  <td className="px-2 py-1">
+                    {ia} y {ib}
+                  </td>
+                  <td className="px-2 py-1">
+                    {FRIDGE_CLUES[ia - 1].a.toUpperCase()} ·{" "}
+                    {FRIDGE_CLUES[ib - 1].a.toUpperCase()}
+                  </td>
+                  <td className="px-2 py-1 font-mono text-sm font-black">{fridgeCode(slot)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </section>
 
       <section className="print-section mt-10 print:break-before-page">

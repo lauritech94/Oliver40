@@ -42,7 +42,8 @@ export default function MinigamesHub() {
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-slate-400">
           Ya has terminado la gymkhana. Ahora toca demostrar quién tiene los mejores reflejos y la
-          mano más rápida. Dos minijuegos, dos marcas, y una clasificación general.
+          mano más rápida. Dos minijuegos, <strong>3 intentos en cada uno</strong>, y una
+          clasificación general. Las marcas se guardan solas.
         </p>
       </div>
 
@@ -102,7 +103,8 @@ export default function MinigamesHub() {
             </div>
             <h2 className="mt-4 text-2xl font-black text-amber-100">Reflejos de Relámpago</h2>
             <p className="mt-2 flex-1 text-sm text-slate-300">
-              Espera al verde y pulsa. Mide tus milisegundos de reacción en 3 rondas.{" "}
+              Espera al verde y pulsa. Mide tus milisegundos de reacción en{" "}
+              <strong>3 intentos</strong>. Se guarda solo.{" "}
               <strong>Menos tiempo = mejor marca.</strong>
             </p>
             <span className="mt-4 font-bold text-amber-300 group-hover:underline">
@@ -122,6 +124,7 @@ export default function MinigamesHub() {
             <h2 className="mt-4 text-2xl font-black text-cyan-100">Caza de Números</h2>
             <p className="mt-2 flex-1 text-sm text-slate-300">
               Toca del 1 al 16 en orden, lo más rápido que puedas.{" "}
+              <strong>3 intentos</strong>, se guarda solo.{" "}
               <strong>Menos tiempo = mejor marca.</strong>
             </p>
             <span className="mt-4 font-bold text-cyan-300 group-hover:underline">

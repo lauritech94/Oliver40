@@ -5,13 +5,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Phase = "idle" | "waiting" | "go" | "tooSoon" | "result";
 
-const TOTAL_ROUNDS = 3;
+const MAX_ATTEMPTS = 3;
 
 export default function ReactionPage() {
   const [phase, setPhase] = useState<Phase>("idle");
-  const [rounds, setRounds] = useState<number[]>([]);
+  const [attempts, setAttempts] = useState<number[]>([]);
   const [lastMs, setLastMs] = useState<number | null>(null);
-  const [saved, setSaved] = useState<null | { isNewBest: boolean; bestScore: number }>(null);
+  const [savedInfo, setSavedInfo] = useState<{ isNewBest: boolean; bestScore: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,21 +27,48 @@ export default function ReactionPage() {
 
   useEffect(() => clear, [clear]);
 
-  const best = rounds.length > 0 ? Math.min(...rounds) : null;
-  const finished = rounds.length >= TOTAL_ROUNDS;
+  const best = attempts.length > 0 ? Math.min(...attempts) : null;
+  const finished = attempts.length >= MAX_ATTEMPTS;
 
   const startRound = useCallback(() => {
     clear();
-    setSaved(null);
+    setSavedInfo(null);
+    setError("");
+    setLastMs(null);
     setPhase("waiting");
-    const delay = 1500 + Math.random() * 2500;
+    const delay = 1400 + Math.random() * 2600;
     timer.current = setTimeout(() => {
       startedAt.current = performance.now();
       setPhase("go");
     }, delay);
   }, [clear]);
 
+  /** Guarda la marca en el servidor (siempre conserva la mejor). */
+  const save = useCallback(async (value: number) => {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/minigames/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: "reaccion", score: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "No se pudo guardar la marca");
+      setSavedInfo({ isNewBest: data.isNewBest, bestScore: data.bestScore });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   const handleTap = useCallback(() => {
+    if (phase === "idle") {
+      // ¡Este es el bug! Antes no se arrancaba al pulsar.
+      startRound();
+      return;
+    }
     if (phase === "waiting") {
       clear();
       setPhase("tooSoon");
@@ -50,39 +77,14 @@ export default function ReactionPage() {
     if (phase === "go") {
       const ms = Math.round(performance.now() - startedAt.current);
       setLastMs(ms);
-      setRounds((r) => [...r, ms]);
+      setAttempts((prev) => {
+        const next = [...prev, ms];
+        void save(ms);
+        return next;
+      });
       setPhase("result");
     }
-  }, [phase, clear]);
-
-  const finish = useCallback(async () => {
-    if (best === null) return;
-    setSaving(true);
-    setError("");
-    try {
-      const res = await fetch("/api/minigames/score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: "reaccion", score: best }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "No se pudo guardar la marca");
-      setSaved({ isNewBest: data.isNewBest, bestScore: data.bestScore });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
-    } finally {
-      setSaving(false);
-    }
-  }, [best]);
-
-  const restart = () => {
-    clear();
-    setRounds([]);
-    setLastMs(null);
-    setSaved(null);
-    setError("");
-    setPhase("idle");
-  };
+  }, [phase, clear, startRound, save]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-5 py-8">
@@ -91,7 +93,7 @@ export default function ReactionPage() {
           ← Fase final
         </Link>
         <span className="font-mono text-xs text-slate-600">
-          Ronda {Math.min(rounds.length + 1, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
+          Intento {Math.min(attempts.length + 1, MAX_ATTEMPTS)} / {MAX_ATTEMPTS}
         </span>
       </div>
 
@@ -102,7 +104,7 @@ export default function ReactionPage() {
         <h1 className="mt-1 text-3xl font-black sm:text-4xl">Reflejos de Relámpago</h1>
         <p className="mt-2 text-sm text-slate-400">
           Espera a que la pantalla se ponga <span className="text-emerald-400">verde</span> y pulsa
-          lo antes posible. Si te adelantas, falta.
+          lo antes posible. Tienes <strong>3 intentos</strong>. Si te adelantas, falta.
         </p>
       </div>
 
@@ -130,7 +132,9 @@ export default function ReactionPage() {
           <>
             <p className="text-6xl">⚡</p>
             <p className="mt-4 text-2xl font-black">Pulsa aquí para empezar</p>
-            <p className="mt-2 text-sm opacity-70">3 rondas · tu mejor tiempo se guarda</p>
+            <p className="mt-2 text-sm opacity-70">
+              3 intentos · tu mejor tiempo se guarda solo
+            </p>
           </>
         )}
         {phase === "waiting" && (
@@ -150,7 +154,7 @@ export default function ReactionPage() {
           <>
             <p className="text-6xl">😅</p>
             <p className="mt-4 text-3xl font-black">¡Falta!</p>
-            <p className="mt-2 text-lg opacity-80">Te has precipitado. Esa ronda no cuenta.</p>
+            <p className="mt-2 text-lg opacity-80">Te has precipitado. Ese intento no cuenta.</p>
           </>
         )}
         {phase === "result" && (
@@ -164,23 +168,31 @@ export default function ReactionPage() {
                   ? "¡Muy buenos reflejos!"
                   : "Bien, pero puedes mejorarlo"}
             </p>
+            {saving && <p className="mt-2 text-sm opacity-70">Guardando marca…</p>}
+            {!saving && savedInfo && (
+              <p className="mt-2 text-sm font-bold text-emerald-200">
+                {savedInfo.isNewBest
+                  ? "🏆 ¡Nueva marca personal! Guardada automáticamente."
+                  : `Guardado. Tu mejor marca: ${savedInfo.bestScore} ms`}
+              </p>
+            )}
           </>
         )}
       </div>
 
       <div className="mt-5 grid grid-cols-3 gap-2">
-        {Array.from({ length: TOTAL_ROUNDS }, (_, i) => (
+        {Array.from({ length: MAX_ATTEMPTS }, (_, i) => (
           <div
             key={i}
             className={`rounded-xl border p-3 text-center ${
-              rounds[i] != null
+              attempts[i] != null
                 ? "border-emerald-500/40 bg-emerald-500/10"
                 : "border-slate-800 bg-slate-900/50"
             }`}
           >
-            <p className="text-[10px] uppercase tracking-widest text-slate-500">Ronda {i + 1}</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500">Intento {i + 1}</p>
             <p className="mt-1 font-mono text-lg font-black tabular-nums">
-              {rounds[i] != null ? `${rounds[i]} ms` : "—"}
+              {attempts[i] != null ? `${attempts[i]} ms` : "—"}
             </p>
           </div>
         ))}
@@ -191,7 +203,9 @@ export default function ReactionPage() {
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-300">
             Tu mejor marca
           </p>
-          <p className="mt-1 font-mono text-6xl font-black tabular-nums text-amber-200">{best} ms</p>
+          <p className="mt-1 font-mono text-6xl font-black tabular-nums text-amber-200">
+            {best} ms
+          </p>
         </div>
       )}
 
@@ -207,16 +221,7 @@ export default function ReactionPage() {
             onClick={startRound}
             className="rounded-xl bg-fuchsia-500 px-7 py-4 text-lg font-black text-white"
           >
-            Siguiente ronda →
-          </button>
-        )}
-        {phase === "result" && finished && !saved && (
-          <button
-            onClick={() => void finish()}
-            disabled={saving}
-            className="rounded-xl bg-emerald-500 px-7 py-4 text-lg font-black text-slate-950 disabled:opacity-50"
-          >
-            {saving ? "Guardando…" : `🏁 Registrar ${best} ms`}
+            Intento {attempts.length + 1} de {MAX_ATTEMPTS} →
           </button>
         )}
         {phase === "tooSoon" && (
@@ -224,35 +229,18 @@ export default function ReactionPage() {
             onClick={startRound}
             className="rounded-xl bg-fuchsia-500 px-7 py-4 text-lg font-black text-white"
           >
-            Reintentar ronda
+            Repetir este intento
           </button>
         )}
-        {(phase === "idle" || finished) && (
-          <button
-            onClick={restart}
-            className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-bold text-slate-300 hover:border-slate-500"
-          >
-            Volver a empezar
-          </button>
-        )}
-      </div>
-
-      {saved && (
-        <div className="mt-5 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 text-center">
-          <p className="text-3xl">{saved.isNewBest ? "🏆" : "✅"}</p>
-          <p className="mt-2 font-bold text-emerald-200">
-            {saved.isNewBest
-              ? `¡Nueva marca personal! ${saved.bestScore} ms`
-              : `Registrado. Tu mejor marca sigue siendo ${saved.bestScore} ms`}
-          </p>
+        {finished && (
           <Link
             href="/ranking"
-            className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-3 font-black text-slate-950"
+            className="rounded-xl bg-emerald-500 px-7 py-4 text-lg font-black text-slate-950"
           >
-            Ver clasificación →
+            🏆 Ver clasificación
           </Link>
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }

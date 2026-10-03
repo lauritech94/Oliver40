@@ -37,12 +37,25 @@ function fmtMs(ms: number | null): string {
 
 export default function RankingPage() {
   const [data, setData] = useState<RankingResponse | null>(null);
+  const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/minigames/ranking", { cache: "no-store" });
-    if (!res.ok) return;
-    setData((await res.json()) as RankingResponse);
+    try {
+      const res = await fetch("/api/minigames/ranking", { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json || !Array.isArray(json.players)) {
+        setError(json?.error ?? "No se pudo cargar la clasificación.");
+        // Aun así mostramos el listado vacío para que la página no se quede cargando.
+        setData((prev) => prev ?? { game: "", planVersion: "", players: [] });
+        return;
+      }
+      setError("");
+      setData(json as RankingResponse);
+    } catch {
+      setError("No se pudo contactar con el servidor.");
+      setData((prev) => prev ?? { game: "", planVersion: "", players: [] });
+    }
   }, []);
 
   useEffect(() => {
@@ -101,6 +114,12 @@ export default function RankingPage() {
       </div>
 
       {!data && <p className="mt-10 text-center text-slate-500">Cargando marcas…</p>}
+
+      {error && (
+        <p className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
+          {error}
+        </p>
+      )}
 
       {data && (
         <>

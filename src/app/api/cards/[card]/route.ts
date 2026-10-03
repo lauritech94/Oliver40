@@ -104,8 +104,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ card: stri
     .set({ attempts: sql`${tasks.attempts} + 1` })
     .where(eq(tasks.id, task.id));
 
-  const lenient = task.typeSlug === "interaccion-social";
-  if (!answersMatch(answer, expected, lenient)) {
+  if (!answersMatch(answer, expected)) {
     return Response.json({ correct: false, attempts: task.attempts + 1 });
   }
 
@@ -129,6 +128,7 @@ function publicTask(task: Task) {
     requiresJudge: task.requiresJudge,
     attempts: task.attempts,
     nonogram: task.meta?.nonogram ?? null,
+    puzzle: task.meta?.puzzle ?? null,
     memorize: task.meta?.memorize ? { seconds: task.meta.memorize.seconds } : null,
   };
 }

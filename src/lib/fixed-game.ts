@@ -36,9 +36,15 @@ export async function ensureFixedGame(): Promise<Game> {
         })
         .returning();
     } else if (game.planVersion && game.planVersion !== FIXED_PLAN_VERSION) {
-      throw new Error(
-        `La base de datos tiene el plan ${game.planVersion}, pero el código es ${FIXED_PLAN_VERSION}. No se cambiará ninguna tarjeta automáticamente.`,
-      );
+      // El plan se ha rediseñado en el código: se vuelven a generar las pruebas.
+      // Los números de tarjeta por jugador NO cambian (el sorteo usa semilla fija),
+      // así que lo impreso sigue siendo válido; solo cambia el contenido de cada tarjeta.
+      await tx.delete(tasks).where(eq(tasks.gameId, game.id));
+      [game] = await tx
+        .update(games)
+        .set({ planVersion: FIXED_PLAN_VERSION, cardPoolSize: FIXED_CARD_COUNT })
+        .where(eq(games.id, game.id))
+        .returning();
     } else if (!game.planVersion) {
       const [taskCount] = await tx
         .select({ total: count() })
