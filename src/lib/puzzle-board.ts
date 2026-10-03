@@ -4,7 +4,6 @@
  */
 export {
   isPuzzleSolved,
-  placePuzzleTiles,
   scrambledPuzzleTiles,
   swapPuzzleTiles,
 } from "../components/Puzzle";

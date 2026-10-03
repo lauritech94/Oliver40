@@ -433,6 +433,20 @@ la **Fase Final**: dos minijuegos de velocidad y reflejos, y una clasificación 
 
 ---
 
+## 🚫 Sin pistas: dificultad máxima
+
+Ninguna prueba de la gymkhana lleva pista. No hay botón de ayuda, ni texto que asista, ni
+campo donde los jueces puedan añadir una: las 420 pruebas se resuelven solo con lo que
+aparece en pantalla (y el material escondido, cuando toca).
+
+Si un jugador se bloquea, el camino de escape es que un **juez** valide esa prueba desde el
+panel. Eso no altera el recorrido ni las tarjetas.
+
+Esto se verifica automáticamente con `scripts/test-no-hints.ts`, que falla si alguien reintroduce
+pistas en el plan, en la app del jugador, en la API o en el editor.
+
+---
+
 ## 🎮 El día de la gymkhana
 
 1. Deja el **QR impreso** en la mesa de salida.

@@ -6,7 +6,8 @@ import { ensureFixedGame } from "@/lib/fixed-game";
 export const dynamic = "force-dynamic";
 
 /** Campos que se pueden editar desde /judge/edit. */
-const EDITABLE = ["title", "prompt", "answer", "hint", "judgeNote"] as const;
+// Sin campo de pista: ninguna prueba debe poder tener ayuda.
+const EDITABLE = ["title", "prompt", "answer", "judgeNote"] as const;
 
 /**
  * Edita una prueba concreta de la partida fija.

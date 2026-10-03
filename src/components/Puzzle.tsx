@@ -19,30 +19,15 @@ export function swapPuzzleTiles(tiles: readonly number[], a: number, b: number):
   return next;
 }
 
-/** Las ayudas intercambian piezas: nunca las duplican ni las eliminan. */
-export function placePuzzleTiles(tiles: readonly number[], count = 3): number[] {
-  let next = [...tiles];
-  for (let k = 0; k < count; k += 1) {
-    const destination = next.findIndex((value, index) => value !== index);
-    if (destination === -1) break;
-    const source = next.indexOf(destination);
-    if (source === -1) throw new Error("La rejilla no contiene todas las piezas.");
-    next = swapPuzzleTiles(next, source, destination);
-  }
-  return next;
-}
-
+/**
+ * Baraja TODAS las piezas: ninguna llega colocada de antemano. No existe ninguna
+ * ayuda que coloque piezas solas, para que solo se resuelva por intercambio manual.
+ */
 export function scrambledPuzzleTiles(total: number, random = Math.random): number[] {
   const tiles = Array.from({ length: total }, (_, i) => i);
   for (let i = tiles.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
     [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
-  }
-  const positions = Array.from({ length: total }, (_, i) => i);
-  for (let k = 0; k < Math.floor(total * 0.45); k += 1) {
-    const destination = positions.splice(Math.floor(random() * positions.length), 1)[0];
-    const source = tiles.indexOf(destination);
-    [tiles[destination], tiles[source]] = [tiles[source], tiles[destination]];
   }
   if (total > 1 && isPuzzleSolved(tiles)) [tiles[0], tiles[1]] = [tiles[1], tiles[0]];
   return tiles;
@@ -66,7 +51,6 @@ export default function Puzzle({ image, size, word, onSolved }: Props) {
   const total = gridSize * gridSize;
   const [tiles, setTiles] = useState(() => scrambledPuzzleTiles(total));
   const [selected, setSelected] = useState<number | null>(null);
-  const [hints, setHints] = useState(0);
   const [showFullRef, setShowFullRef] = useState(false);
   const [imageState, setImageState] = useState<ImageState>({ status: "loading" });
   const [reload, setReload] = useState(0);
@@ -223,7 +207,7 @@ export default function Puzzle({ image, size, word, onSolved }: Props) {
           <p className="mt-3 inline-block rounded-lg border border-emerald-500/30 bg-slate-950 px-2 py-1.5 font-mono font-bold text-emerald-300" aria-live="polite">
             ✓ {correct}/{total} casillas
           </p>
-          {hints > 0 && <p className="mt-1 text-[11px] text-cyan-300">💡 {hints} ayudas usadas</p>}
+
         </div>
       </div>
 
@@ -274,17 +258,12 @@ export default function Puzzle({ image, size, word, onSolved }: Props) {
           {saveError && <button type="button" onClick={() => void complete()} disabled={saving} className="mt-3 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950">Reintentar envío</button>}
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setTiles((previous) => placePuzzleTiles(previous, 3));
-            setHints((value) => value + 1);
-            setSelected(null);
-          }}
-          className="mt-4 w-full rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-3 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
-        >
-          💡 Colocar 3 casillas en su sitio
-        </button>
+        <p className="mt-4 rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-3 text-center text-xs leading-relaxed text-slate-400">
+          Todas las piezas están barajadas y no hay ayudas: hay que ordenarlas a mano.
+          <br />
+          Si te atasca, avisa a un <strong className="text-slate-300">juez</strong>: puede validar
+          esta prueba desde su panel.
+        </p>
       )}
     </div>
   );

@@ -15,7 +15,7 @@ type TaskRow = {
   title: string;
   prompt: string;
   answer: string;
-  hint: string;
+
   judgeNote: string;
   requiresJudge: boolean;
   needsSetup: boolean;
@@ -59,7 +59,7 @@ const SOURCE: Record<string, { file: string; note: string }> = {
 
 const sourceOf = (slug: string) => SOURCE[slug] ?? SOURCE[slug.replace("_", "-")] ?? null;
 
-type Editable = { title: string; prompt: string; answer: string; hint: string; judgeNote: string };
+type Editable = { title: string; prompt: string; answer: string; judgeNote: string };
 
 export default function JudgeEditPage() {
   const [state, setState] = useState<GameState | null>(null);
@@ -148,7 +148,6 @@ export default function JudgeEditPage() {
       title: task.title,
       prompt: task.prompt,
       answer: task.answer,
-      hint: task.hint,
       judgeNote: task.judgeNote,
     });
   }
@@ -271,7 +270,6 @@ export default function JudgeEditPage() {
             (draft.title !== task.title ||
               draft.prompt !== task.prompt ||
               draft.answer !== task.answer ||
-              draft.hint !== task.hint ||
               draft.judgeNote !== task.judgeNote);
           const src = sourceOf(task.typeSlug);
 
@@ -347,22 +345,17 @@ export default function JudgeEditPage() {
                     </p>
                   </Field>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Pista (opcional)">
-                      <input
-                        value={draft.hint}
-                        onChange={(e) => setDraft({ ...draft, hint: e.target.value })}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                      />
-                    </Field>
-                    <Field label="Nota solo para jueces (opcional)">
-                      <input
-                        value={draft.judgeNote}
-                        onChange={(e) => setDraft({ ...draft, judgeNote: e.target.value })}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-                      />
-                    </Field>
-                  </div>
+                  <Field label="Nota solo para jueces (opcional)">
+                    <input
+                      value={draft.judgeNote}
+                      onChange={(e) => setDraft({ ...draft, judgeNote: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+                    />
+                  </Field>
+                  <p className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-500">
+                    🚫 <strong>Dificultad máxima:</strong> ninguna prueba tiene pista, ni aquí ni en
+                    la app del jugador.
+                  </p>
 
                   {task.meta?.profile && (
                     <p className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 text-xs text-cyan-100/80">
@@ -393,7 +386,6 @@ export default function JudgeEditPage() {
                           title: task.title,
                           prompt: task.prompt,
                           answer: task.answer,
-                          hint: task.hint,
                           judgeNote: task.judgeNote,
                         })
                       }

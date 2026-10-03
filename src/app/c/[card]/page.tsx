@@ -16,8 +16,7 @@ type TaskView = {
   icon: string;
   title: string;
   prompt: string;
-  hasHint: boolean;
-  hintUsed: boolean;
+
   requiresJudge: boolean;
   attempts: number;
   puzzle: PuzzleData | null;
@@ -48,7 +47,6 @@ export default function CardPage() {
 
   const [data, setData] = useState<CardResponse | null>(null);
   const [answer, setAnswer] = useState("");
-  const [hint, setHint] = useState<string | null>(null);
   const [wrong, setWrong] = useState(false);
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -108,15 +106,6 @@ export default function CardPage() {
     await send(answer.trim());
   }
 
-  async function askHint() {
-    const res = await fetch(`/api/cards/${card}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "hint" }),
-    });
-    const json = await res.json();
-    setHint(json.hint ?? "Sin pista");
-  }
 
   if (!data) return <Shell>Cargando tarjeta #{card}…</Shell>;
 
@@ -332,22 +321,10 @@ export default function CardPage() {
           </p>
         )}
 
-        {task.hasHint && (
-          <div className="mt-5 text-center">
-            {hint ? (
-              <p className="whitespace-pre-line rounded-xl border border-cyan-500/40 bg-cyan-500/10 p-3 text-sm text-cyan-100">
-                💡 {hint}
-              </p>
-            ) : (
-              <button
-                onClick={askHint}
-                className="text-sm text-slate-500 underline-offset-4 hover:text-cyan-300 hover:underline"
-              >
-                💡 Pedir pista (queda registrado)
-              </button>
-            )}
-          </div>
-        )}
+        <p className="mt-5 text-center text-xs leading-relaxed text-slate-600">
+          Sin pistas en ninguna prueba: busca, piensa y respóndela tú. Si te bloqueas, avisa a un{" "}
+          <strong className="text-slate-500">juez</strong>.
+        </p>
       </div>
     </main>
   );

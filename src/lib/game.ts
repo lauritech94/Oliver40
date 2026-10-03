@@ -58,7 +58,8 @@ export function generateRun(players: PlayerInfo[], poolSize: number): GeneratedT
         title: draft.title,
         prompt: draft.prompt,
         answer: draft.answer,
-        hint: draft.hint ?? "",
+        // Dificultad máxima: ninguna prueba del plan lleva pista.
+        hint: "",
         judgeNote: draft.judgeNote ?? "",
         requiresJudge: type.requiresJudge,
         needsSetup: pendingProfile,

@@ -1,4 +1,4 @@
-import { asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { games, players, tasks, type Game } from "@/db/schema";
 import { PLAYER_EMOJIS, makeToken } from "@/lib/utils";
@@ -152,6 +152,13 @@ export async function ensureFixedGame(): Promise<Game> {
         `La partida fija tiene ${existingTasks.total} tareas, pero el plan oficial tiene ${FIXED_PLAN.length}. Revisa la base de datos antes de jugar.`,
       );
     }
+
+    // Ninguna prueba lleva pista. Se vacían las que queden en una partida ya creada
+    // sin tocar preguntas, respuestas, ediciones, tarjetas ni progreso.
+    await tx
+      .update(tasks)
+      .set({ hint: "", hintUsed: false })
+      .where(and(eq(tasks.gameId, game.id), ne(tasks.hint, "")));
 
     const [updated] = await tx
       .update(games)

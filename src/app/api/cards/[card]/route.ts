@@ -77,11 +77,6 @@ export async function POST(request: Request, ctx: { params: Promise<{ card: stri
 
   const body = (await request.json()) as { answer?: string; action?: string };
 
-  if (body.action === "hint") {
-    await db.update(tasks).set({ hintUsed: true }).where(eq(tasks.id, task.id));
-    return Response.json({ hint: task.hint || "No hay pista para esta prueba 😈" });
-  }
-
   if (body.action === "memorize") {
     const memo = task.meta?.memorize;
     if (!memo) return Response.json({ error: "Esta prueba no tiene secuencia" }, { status: 400 });
@@ -123,8 +118,7 @@ function publicTask(task: Task) {
     icon: task.icon,
     title: task.title,
     prompt: task.prompt,
-    hasHint: Boolean(task.hint),
-    hintUsed: task.hintUsed,
+
     requiresJudge: task.requiresJudge,
     attempts: task.attempts,
     nonogram: task.meta?.nonogram ?? null,
