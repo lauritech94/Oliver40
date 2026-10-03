@@ -81,6 +81,61 @@ Guárdala, la usarás dos veces.
 
 ---
 
+## Si Vercel falla con «Cannot find module './content/words'»
+
+Significa que **GitHub no contiene la carpeta completa del código**. `src/lib/catalog.ts`
+busca exactamente `src/lib/content/words.ts`; no es un problema de Neon ni de Vercel.
+
+Cada error desaparece al copiar un archivo porque hay varios archivos incompletos. Sube de una
+vez la estructura completa:
+
+```text
+src/
+  components/
+    Puzzle.tsx
+    PuzzleImageEditor.tsx
+  content/                    (no existe: va dentro de src/lib)
+  lib/
+    content/
+      extras.ts
+      nonograms.json
+      profile.ts
+      static.ts
+      words.ts                ← este es el que aparece en el error
+    catalog.ts
+    generators.ts
+    rand.ts
+    types.ts
+    ... y el resto de archivos de src/lib/
+  db/
+  app/
+scripts/
+public/
+drizzle/
+```
+
+La ruta real es **`src` → `lib` → `content` → `words.ts`**. Si GitHub muestra `words.ts`
+directamente en `src/lib` o en la raíz, está en el lugar incorrecto.
+
+### Comprobación automática del repositorio
+
+He añadido `scripts/verify-layout.mjs` y un script `prebuild`. Antes de compilar, Vercel revisará
+todos los imports y mostrará **todos los archivos que faltan**, no solo el primero. Para usarlo:
+
+1. Sube también `scripts/verify-layout.mjs` y el `package.json` actualizado (debe contener
+   `"prebuild": "node scripts/verify-layout.mjs"`).
+2. Haz commit en la rama que despliega Vercel.
+3. Si falta algo, el log terminará con una lista como `src/lib/content/words.ts`,
+   `src/lib/content/static.ts`, etc.
+
+No cambies `tsconfig.json`, no muevas los imports a rutas absolutas para ocultar el error
+y no uses `git push --force`. Tampoco ejecutes `/setup` ni reinicies la partida.
+
+**No necesitas tocar la base de datos.** Estos errores son solo de archivos de código que no
+llegaron a GitHub.
+
+---
+
 ## Si Vercel falla con «Cannot find module '@/lib/puzzle-board'»
 
 No es un problema de Neon ni del progreso: la compilación no encuentra un archivo del código.

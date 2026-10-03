@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "db:setup": "tsx scripts/setup-db.ts",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "prebuild": "node scripts/verify-layout.mjs"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
