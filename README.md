@@ -252,6 +252,40 @@ instalación nueva.
 
 ---
 
+## 🖼️ Si el puzzle muestra cuadros vacíos o una imagen rota
+
+La miniatura y las 64 piezas necesitan la misma foto. Si una URL como
+`/images/puzzle/pescador_exact.jpg` devuelve **404**, ese JPG no está publicado en Vercel;
+no se arregla reiniciando el progreso ni volviendo a ejecutar `/setup`.
+
+### Repararlo con tu foto original (recomendado)
+
+1. Publica esta versión del código en GitHub y espera a que Vercel termine el despliegue.
+2. Abre **`/judge/edit` → Foto del puzzle**.
+3. Selecciona tu foto original en JPG, PNG o WebP (máximo 3 MB).
+4. Comprueba la vista previa y pulsa **«Guardar foto para los 28 puzzles»**.
+5. Recarga la tarjeta del jugador.
+
+La foto se comprime sin recortarla, se orienta correctamente y se guarda en los metadatos
+existentes de los puzzles. No depende de archivos escritos en el disco temporal de Vercel.
+No hay que volver a desplegar tras guardarla, ni crear tablas, ni reimprimir las tarjetas.
+Se conservan las respuestas, las ediciones, el número NFC, el orden y el progreso.
+Si restauras una prueba al original desde el editor, también se restaura su foto original.
+
+**Alternativa con GitHub:** sube los JPG a `public/images/puzzle/` respetando exactamente
+los nombres y mayúsculas que usa tu código y vuelve a desplegar. En la URL pública se
+omite `public`: `public/images/puzzle/foto.jpg` se visita en `/images/puzzle/foto.jpg`.
+
+El tablero solo permite jugar cuando la foto se ha cargado y decodificado. Si falta,
+muestra un aviso y permite reintentar, en lugar de enseñar casillas vacías. La miniatura,
+la ampliación y las piezas muestran la imagen completa con las mismas proporciones.
+
+**Nota sobre las imágenes anteriores:** los archivos `pescador.jpg` y `pescador_exact.jpg`
+eran recreaciones generadas, no el archivo original adjuntado en la conversación. Para
+usar exactamente tu fotografía, selecciona el archivo original con el nuevo control.
+
+---
+
 ## 🔥 Fase final: el Reto de los Récords
 
 Cuando un jugador termina sus **15 pruebas**, en lugar de un simple cartel de fin se desbloquea
