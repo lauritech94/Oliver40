@@ -271,8 +271,8 @@ export default function CardPage() {
         )}
         {pending && (
           <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-center text-sm text-amber-200">
-            ⚠️ La persona a la que buscas aún no ha rellenado su ficha. Avisa a un juez para que
-            valide la prueba.
+            ⚠️ Esta prueba todavía no tiene respuesta asignada. Avisa a un juez: la escribe en
+            «✏️ Editar preguntas» y podrás continuar.
           </p>
         )}
 

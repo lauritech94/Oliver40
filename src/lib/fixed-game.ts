@@ -4,6 +4,17 @@ import { games, players, tasks, type Game } from "@/db/schema";
 import { PLAYER_EMOJIS, makeToken } from "@/lib/utils";
 import { FIXED_CARD_COUNT, FIXED_GAME_CODE, FIXED_GAME_NAME, FIXED_PLAN, FIXED_PLAN_VERSION, FIXED_PLAYER_NAMES } from "@/lib/fixed-plan";
 
+/**
+ * Devuelve el texto ORIGINAL de una prueba tal y como está en el plan fijo,
+ * para poder deshacer las ediciones hechas desde /judge/edit.
+ */
+export function originalTaskFor(
+  slot: number,
+  stepIndex: number,
+): (typeof FIXED_PLAN)[number] | undefined {
+  return FIXED_PLAN.find((task) => task.playerId === slot && task.stepIndex === stepIndex);
+}
+
 /** Crea la única partida y sus 420 tareas de forma idempotente y segura ante concurrencia. */
 export async function ensureFixedGame(): Promise<Game> {
   return db.transaction(async (tx) => {

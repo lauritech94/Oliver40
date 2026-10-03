@@ -23,6 +23,8 @@ type TaskRow = {
   hintUsed: boolean;
   solvedAt: string | null;
   solvedByJudge: boolean;
+  /** Lo que se usará para validar la prueba. */
+  effectiveAnswer: string;
   meta: { profile?: { targetPlayerId: number; field: string } };
 };
 
@@ -150,6 +152,12 @@ export default function JudgeDashboard() {
             🖨️ Imprimir QR, NFC y hoja de jueces
           </Link>
           <Link
+            href="/judge/edit"
+            className="rounded-xl border border-emerald-500/40 px-5 py-3 font-bold text-emerald-200 hover:bg-emerald-500/10"
+          >
+            ✏️ Editar preguntas
+          </Link>
+          <Link
             href="/judge/links"
             className="rounded-xl border border-cyan-500/40 px-5 py-3 font-bold text-cyan-200 hover:bg-cyan-500/10"
           >
@@ -258,7 +266,7 @@ export default function JudgeDashboard() {
                     <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-950/70 p-2 text-xs">
                       <span>{current.icon}</span>
                       <span className="font-semibold">{current.title}</span>
-                      <span className="text-slate-500">respuesta: {current.answer || "la ficha del objetivo / juez valida"}</span>
+                      <span className="text-slate-500">respuesta: {current.effectiveAnswer || "⚠ sin respuesta — edítala en ✏️ Editar preguntas"}</span>
                       {(current.requiresJudge || current.needsSetup) && (
                         <button
                           onClick={() => void validate(current.id)}
@@ -348,7 +356,7 @@ export default function JudgeDashboard() {
 
           <h2 className="mt-8 text-lg font-black">Pruebas sociales</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Si el objetivo no rellenó su ficha, el juez puede comprobar la respuesta preguntándole y usar «Validar prueba» en el progreso.
+            Escribe aquí las preguntas de tu encuesta y sus respuestas. Si una tarjeta se queda sin respuesta, se marca para que la escribas en ✏️ Editar preguntas.
           </p>
           <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-800">
             <table className="w-full text-left text-sm">
@@ -356,8 +364,7 @@ export default function JudgeDashboard() {
                 <tr>
                   <th className="px-3 py-2">NFC</th>
                   <th className="px-3 py-2">Jugador</th>
-                  <th className="px-3 py-2">Preguntar a</th>
-                  <th className="px-3 py-2">Dato</th>
+                  <th className="px-3 py-2">Pregunta</th>
                   <th className="px-3 py-2">Respuesta</th>
                 </tr>
               </thead>
@@ -367,16 +374,13 @@ export default function JudgeDashboard() {
                   .sort((a, b) => a.cardNumber - b.cardNumber)
                   .map((task) => {
                     const owner = state.players.find((p) => p.id === task.playerId);
-                    const targetId = task.meta.profile?.targetPlayerId;
-                    const target = state.players.find((p) => p.id === targetId);
                     return (
                       <tr key={task.id} className="border-t border-slate-800">
                         <td className="px-3 py-2 font-mono font-bold text-fuchsia-300">#{task.cardNumber}</td>
                         <td className="px-3 py-2">{owner?.name}</td>
-                        <td className="px-3 py-2">{target?.name ?? "—"}</td>
                         <td className="px-3 py-2">{task.title.replace("Social: ", "")}</td>
-                        <td className={`px-3 py-2 font-mono text-xs ${task.answer ? "text-cyan-200" : "text-amber-300"}`}>
-                          {task.answer || "Ficha vacía · validar con la persona"}
+                        <td className={`px-3 py-2 font-mono text-xs ${task.effectiveAnswer ? "text-cyan-200" : "text-amber-300"}`}>
+                          {task.effectiveAnswer || "⚠ Falta escribirla en ✏️ Editar preguntas"}
                         </td>
                       </tr>
                     );

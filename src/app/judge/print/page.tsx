@@ -206,37 +206,33 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
 
       <section className="print-section mt-10 print:break-before-page">
         <h2 className="border-b-2 border-slate-950 pb-2 text-2xl font-black">
-          4 · Interacción social (objetivo y respuesta de ficha)
+          4 · Interacción social (pregunta y respuesta)
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          La respuesta se comprueba automáticamente si el objetivo rellenó su ficha. Si no, pregunta a esa persona y valida la tarjeta desde el panel.
+          Rellena aquí la pregunta de tu encuesta y su respuesta, igual que en el resto de
+          pruebas. Si una casilla sale vacía, escribe la respuesta en «✏️ Editar preguntas» antes
+          del juego.
         </p>
         <table className="mt-4 w-full text-left text-xs">
           <thead>
             <tr className="bg-slate-100 uppercase">
               <th className="px-2 py-2">NFC</th>
               <th className="px-2 py-2">Jugador</th>
-              <th className="px-2 py-2">Preguntar a</th>
-              <th className="px-2 py-2">Dato</th>
-              <th className="px-2 py-2">Respuesta de ficha</th>
+              <th className="px-2 py-2">Pregunta</th>
+              <th className="px-2 py-2">Respuesta</th>
             </tr>
           </thead>
           <tbody>
-            {socialTasks.map((task) => {
-              const targetId = task.meta.profile?.targetPlayerId;
-              const target = state.players.find((p) => p.id === targetId);
-              return (
-                <tr key={task.id} className="break-inside-avoid border-b border-slate-200">
-                  <td className="px-2 py-2 font-mono font-black">#{task.cardNumber}</td>
-                  <td className="px-2 py-2">J{String(task.playerSlot).padStart(2, "0")} · {task.playerName}</td>
-                  <td className="px-2 py-2">J{String(target?.slot ?? 0).padStart(2, "0")} · {target?.name ?? "—"}</td>
-                  <td className="px-2 py-2">{task.title.replace("Social: ", "")}</td>
-                  <td className={`px-2 py-2 font-mono font-bold ${task.answer ? "" : "text-amber-700"}`}>
-                    {task.answer || "FICHA VACÍA · validar preguntando"}
-                  </td>
-                </tr>
-              );
-            })}
+            {socialTasks.map((task) => (
+              <tr key={task.id} className="break-inside-avoid border-b border-slate-200">
+                <td className="px-2 py-2 font-mono font-black">#{task.cardNumber}</td>
+                <td className="px-2 py-2">J{String(task.playerSlot).padStart(2, "0")} · {task.playerName}</td>
+                <td className="px-2 py-2">{task.title.replace("Social: ", "")}</td>
+                <td className={`px-2 py-2 font-mono font-bold ${task.effectiveAnswer ? "" : "text-amber-700"}`}>
+                  {task.effectiveAnswer || "⚠ FALTA — escribe la respuesta en ✏️ Editar preguntas"}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>

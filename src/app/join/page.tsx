@@ -136,9 +136,17 @@ export default function JoinPage() {
       </label>
 
       {error && (
-        <p className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
-          {error}
-        </p>
+        <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-200">
+          <p>{error}</p>
+          {error.includes("db:setup") && (
+            <Link
+              href="/setup"
+              className="mt-3 inline-block rounded-lg bg-rose-500 px-4 py-2 font-bold text-white"
+            >
+              🛠️ Preparar base de datos
+            </Link>
+          )}
+        </div>
       )}
 
       {roster.length === 0 ? (

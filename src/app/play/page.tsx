@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { PROFILE_FIELDS } from "@/lib/content/profile";
 
 type GridTile = {
   stepIndex: number;
@@ -77,7 +76,6 @@ export default function PlayPage() {
   const total = me.totalSteps || 15;
   const progress = Math.round((me.solvedCount / total) * 100);
   const finished = Boolean(me.player.finishedAt) || me.solvedCount === total;
-  const profileDone = PROFILE_FIELDS.every((f) => Boolean(me.player.profile[f.key]));
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-7 sm:py-10">
@@ -190,13 +188,6 @@ export default function PlayPage() {
         </ol>
       </section>
 
-      <details className="mt-7 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-400">
-          🗣️ Ficha opcional para las pruebas sociales {profileDone ? "✓" : "(si quieres)"}
-        </summary>
-        <ProfileForm profile={me.player.profile} onSaved={() => void load()} />
-      </details>
-
       {me.history.length > 0 && (
         <details className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <summary className="cursor-pointer text-sm font-semibold text-slate-400">
@@ -214,75 +205,6 @@ export default function PlayPage() {
         </details>
       )}
     </main>
-  );
-}
-
-function ProfileForm({
-  profile,
-  onSaved,
-}: {
-  profile: Record<string, string>;
-  onSaved: () => void;
-}) {
-  const [values, setValues] = useState<Record<string, string>>(profile);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => setValues(profile), [profile]);
-
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    const res = await fetch("/api/me/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile: values }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setSaved(true);
-      onSaved();
-    }
-  }
-
-  return (
-    <form onSubmit={save} className="mt-4 grid gap-3">
-      <p className="text-xs text-slate-500">
-        Si rellenas estos datos, otro jugador podrá preguntártelos en una prueba. No son
-        obligatorios para jugar.
-      </p>
-      {PROFILE_FIELDS.map((field) => (
-        <label key={field.key} className="grid gap-1 text-sm">
-          <span className="text-slate-300">{field.label}</span>
-          {field.options ? (
-            <select
-              value={values[field.key] ?? ""}
-              onChange={(e) => setValues({ ...values, [field.key]: e.target.value })}
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            >
-              <option value="">— elige —</option>
-              {field.options.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={values[field.key] ?? ""}
-              onChange={(e) => setValues({ ...values, [field.key]: e.target.value })}
-              maxLength={60}
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            />
-          )}
-        </label>
-      ))}
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-lg bg-cyan-500 px-4 py-2 font-bold text-slate-950 disabled:opacity-50"
-      >
-        {saving ? "Guardando…" : saved ? "Guardada ✓" : "Guardar ficha"}
-      </button>
-    </form>
   );
 }
 

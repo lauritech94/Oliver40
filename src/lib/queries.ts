@@ -24,7 +24,15 @@ export type PublicPlayer = {
   finishedAt: Date | null;
 };
 
-export type PlayerRow = PublicPlayer & { tasks: Task[] };
+/**
+ * Una prueba tal y como la ve el panel de jueces.
+ * - `answer`: lo guardado en la base de datos (el editor trabaja sobre este campo).
+ * - `effectiveAnswer`: lo que se usará para validar. En las pruebas sociales sale de la
+ *   ficha del jugador objetivo, salvo que el juez haya escrito una respuesta fija.
+ */
+export type TaskView = Task & { effectiveAnswer: string };
+
+export type PlayerRow = PublicPlayer & { tasks: TaskView[] };
 
 export type GameState = {
   game: Game;
@@ -47,13 +55,15 @@ export async function getGameState(code: string): Promise<GameState | null> {
     .where(eq(tasks.gameId, game.id))
     .orderBy(asc(tasks.playerId), asc(tasks.stepIndex));
 
-  // Las pruebas sociales se resuelven con la ficha actual del jugador objetivo.
-  const resolve = (task: Task): Task => {
+  // Una respuesta fija escrita por el juez siempre manda sobre la ficha.
+  const resolve = (task: Task): TaskView => {
     const link = task.meta?.profile;
-    if (!link) return task;
+    if (!link || task.answer.trim()) {
+      return { ...task, effectiveAnswer: task.answer };
+    }
     const target = playerRows.find((p) => p.id === link.targetPlayerId);
     const value = (target?.profile?.[link.field] ?? "").trim();
-    return { ...task, answer: value, needsSetup: !value };
+    return { ...task, effectiveAnswer: value, needsSetup: !value };
   };
 
   return {
@@ -86,10 +96,19 @@ export async function getTaskByCard(gameId: number, cardNumber: number): Promise
   return rows[0] ?? null;
 }
 
-/** Respuesta esperada de una prueba (resuelve las que dependen de una ficha). */
+/**
+ * Respuesta esperada de una prueba.
+ *
+ * En las pruebas sociales se toma de la ficha del jugador al que hay que preguntar,
+ * PERO si un juez escribió una respuesta fija en /judge/edit, esa tiene prioridad.
+ * Así el cambio es reversible: borra la respuesta fija y vuelve a usar la ficha.
+ */
 export async function resolveExpected(task: Task): Promise<string> {
+  if (task.answer.trim()) return task.answer;
+
   const link = task.meta?.profile;
-  if (!link) return task.answer;
+  if (!link) return "";
+
   const rows = await db
     .select({ profile: players.profile })
     .from(players)

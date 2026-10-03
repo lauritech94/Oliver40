@@ -15,7 +15,7 @@ exactamente lo que se jugará el día de la fiesta.
 1. Subir el código a GitHub.
 2. Crear una base de datos PostgreSQL gratuita (Neon).
 3. Desplegar en Vercel.
-4. Ejecutar **un comando** para crear las tablas y sembrar la partida.
+4. Abrir **`/setup`** en tu web y pulsar un botón (sin terminal).
 5. Imprimir las tarjetas y grabar los NFC con tu dominio final.
 
 Tiempo aproximado: 20 minutos.
@@ -83,21 +83,46 @@ Guárdala, la usarás dos veces.
 
 ## 4 · Preparar la base de datos (el paso importante)
 
-Este comando crea las tablas y siembra la partida con los 28 recorridos. **Se ejecuta desde tu
-ordenador**, apuntando a la base de datos de producción.
+Hay **dos formas de hacerlo**. Elige la que te resulte más cómoda; las dos hacen lo mismo.
+
+### Opción A · Desde el navegador (sin terminal) ✅ recomendada
+
+Abre en tu web desplegada:
+
+```
+https://TU-DOMINIO.vercel.app/setup
+```
+
+Verás una lista de comprobaciones y un botón:
+
+1. Comprueba que **«Variable DATABASE_URL configurada»** esté marcada ✓.
+2. Pulsa **«▶ Preparar base de datos ahora»**.
+3. Cuando salga el cartel verde **✅ Todo preparado**, ya está.
+
+Debajo verás los contadores: **28 jugadores · 420 pruebas · 420 tarjetas únicas**.
+
+> Si falta la variable `DATABASE_URL`, la propia página te lo dice. Añádela en
+> **Vercel → tu proyecto → Settings → Environment Variables** y vuelve a desplegar
+> (Deployments → los tres puntos → Redeploy).
+
+### Opción B · Desde la terminal
 
 ```bash
-# 1. Instala las dependencias (si no lo has hecho ya)
+# 1. Descarga el proyecto y entra en la carpeta
+git clone https://github.com/TU_USUARIO/gymkhana-nfc.git
+cd gymkhana-nfc
+
+# 2. Instala las dependencias
 npm install
 
-# 2. Crea un archivo .env con la cadena de NEON (no la de local)
-echo 'DATABASE_URL=postgresql://usuario:contrasena@ep-algo-123...neon.tech/neondb?sslmode=require' > .env
+# 3. Crea el archivo .env con tu cadena de NEON (sustituye los datos de ejemplo)
+echo 'DATABASE_URL=postgresql://usuario:contrasena@ep-algo-123.eu-central-1.aws.neon.tech/neondb?sslmode=require' > .env
 
-# 3. Lanza la preparación
+# 4. Lanza la preparación
 npm run db:setup
 ```
 
-Deberías ver:
+Al terminar verás:
 
 ```
 ✅ Todo listo:
@@ -106,9 +131,15 @@ Deberías ver:
    · 420 tarjetas NFC distintas
 ```
 
-Recarga tu web: la lista de los 28 nombres ya aparece.
+> ⚠️ En el paso 3, **copia tu cadena real de Neon**, no la del ejemplo. Es la que copiaste en
+> el paso 2 de esta guía. En Windows usa PowerShell o crea el `.env` con el Bloc de notas.
 
-> Este comando es **seguro de repetir**. Si la partida ya existe, no cambia ninguna asignación.
+### Comprobación final
+
+Abre `https://TU-DOMINIO.vercel.app/join`. Debe aparecer la lista con los **28 nombres**
+(Oli, Piti, Alex…). Si aparece, todo está listo.
+
+Este paso es **seguro de repetir**: si la partida ya existe, no cambia ninguna asignación.
 
 ---
 
@@ -128,7 +159,7 @@ Ahí tienes todo lo que hay que preparar:
 | **420 tarjetas** | Para recortar. Tamaño carta (6,3 × 8,6 cm), 9 por hoja. Solo dicen «TARJETA 01». |
 | **Mapa de tarjetas** | Qué número pertenece a quién. **Solo para jueces.** |
 | **Palabras secretas** | Las 28 palabras de las pruebas de foto. **Solo para jueces.** |
-| **Interacción social** | A quién hay que preguntar y la respuesta. **Solo para jueces.** |
+| **Interacción social** | La pregunta de tu encuesta y su respuesta. **Solo para jueces.** |
 | **Código maestro** | Una hoja para pegar dentro de la puerta de la nevera. |
 | **Búsqueda del objeto** | Hojas con códigos por jugador para esconder. |
 
@@ -172,6 +203,55 @@ Borra el avance pero **no cambia ninguna tarjeta ni ningún recorrido**.
 
 ---
 
+## ✏️ Cambiar preguntas y respuestas
+
+Abre:
+
+```
+https://TU-DOMINIO.vercel.app/judge/edit
+```
+
+Ahí están las **420 pruebas** con su texto actual. Puedes filtrar por jugador, por tipo de
+prueba o buscar por texto. Al desplegar una prueba puedes editar:
+
+| Campo | Qué es |
+| ----- | ------ |
+| **Título** | El nombre corto que se ve en el tablero del jugador |
+| **Pregunta** | El enunciado completo que lee el jugador |
+| **Respuesta** | La solución. Acepta variantes separadas por `\|` (p. ej. `titanic\|el titanic`) |
+| **Pista** | Lo que aparece si el jugador pulsa «Pedir pista» |
+| **Nota para jueces** | Texto que solo se ve en el panel, nunca en el móvil del jugador |
+
+Al pulsar **Guardar** se aplica al momento. Las pruebas que hayas tocado se marcan con la
+etiqueta **«editada»** y puedes filtrar para ver solo esas. El botón **↺ Restaurar original**
+devuelve una prueba al texto del plan inicial.
+
+> 🔒 Editar un texto **no cambia los números de tarjeta ni los recorridos**: lo que ya hayas
+> impreso sigue siendo válido.
+
+**Las pruebas de interacción social** se editan igual que el resto: escribes la pregunta (por
+ejemplo la de tu encuesta) y su respuesta. El enunciado original menciona a otro jugador:
+sustitúyelo por tu pregunta.
+
+### Editarlo en el código (alternativa)
+
+Si prefieres cambiar los textos de raíz y volver a desplegar, cada prueba indica en el editor
+de qué archivo viene. El mapa rápido:
+
+| Archivo | Qué contiene |
+| ------- | ------------ |
+| `src/lib/content/static.ts` | Acertijos, emojis, retos de foto, cultura, ¿quién soy?, fórmulas de palabras |
+| `src/lib/content/words.ts` | Palabras de anagramas, del código escondido y las secretas de foto |
+| `src/lib/content/nonograms.json` | Las rejillas 5×5 |
+| `src/lib/content/profile.ts` | Los datos que se preguntan en la prueba social |
+| `src/lib/generators.ts` | Lógica, series, sopas de letras, memoria, búsquedas (se generan con números al azar y luego se congelan) |
+
+⚠️ Si cambias el código **no** pulses nada que regenere la partida: las 420 pruebas ya están
+guardadas en tu base de datos y son las que valen. Cambiar el código solo afectaría a una
+instalación nueva.
+
+---
+
 ## 🎮 El día de la gymkhana
 
 1. Deja el **QR impreso** en la mesa de salida.
@@ -191,7 +271,7 @@ Desde `/judge` sigues en tiempo real quién va por dónde y puedes validar a man
 | # | Tipo | Validación |
 |---|------|-----------|
 | 01 | 🧩 Acertijo | Automática |
-| 02 | 🗣️ Interacción social | Automática (ficha) o juez |
+| 02 | 🗣️ Interacción social | Automática |
 | 03 | 🔤 Anagrama | Automática |
 | 04 | 😱 Jeroglífico de emojis | Automática |
 | 05 | 🧠 Lógica | Automática |
@@ -237,8 +317,8 @@ npm run dev              # http://localhost:3000
   jugadores.
 - **Un jugador no puede cambiar de nombre** una vez elegido. Solo se puede desde el panel de
   jueces.
-- **Las fichas sociales son opcionales.** Si alguien no la rellena, su prueba asociada la
-  valida un juez a mano (la hoja impresa lo indica).
+- **Toda prueba necesita respuesta.** Si una tarjeta se queda sin respuesta, el jugador no puede
+  superarla. El editor las marca con «⚠ sin respuesta» para que las revises antes del juego.
 
 ---
 
