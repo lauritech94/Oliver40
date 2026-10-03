@@ -82,8 +82,30 @@ for (const file of files) {
   }
 }
 
+// Copias sueltas en la raíz que ya existen dentro de src/. TypeScript las compilaba
+// junto al proyecto real y provocaban errores de imports imposibles de satisfacer.
+const SOURCE_EXTENSIONS = [".ts", ".tsx", ".mjs", ".js", ".jsx"];
+const ROOT_ALLOWLIST = new Set([
+  "next.config.ts",
+  "drizzle.config.ts",
+  "eslint.config.mjs",
+  "postcss.config.mjs",
+  "next-env.d.ts", // generado automáticamente por Next.js
+]);
+const strayRootFiles = readdirSync(projectRoot, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && SOURCE_EXTENSIONS.includes(extname(entry.name)))
+  .map((entry) => entry.name)
+  .filter((name) => !ROOT_ALLOWLIST.has(name))
+  .sort();
+
 if (!missingRequired.length && !missingImports.length) {
   console.log(`✓ Estructura completa: ${files.length} archivos TypeScript/JavaScript revisados.`);
+  if (strayRootFiles.length) {
+    console.warn("\n⚠️  Hay copias sueltas en la raíz del repositorio. No forman parte del proyecto");
+    console.warn("    y TypeScript las ignora gracias a tsconfig.json, pero conviene borrarlas:");
+    for (const name of strayRootFiles) console.warn(`      · ${name}`);
+    console.warn("    Los archivos reales están dentro de src/ (src/lib, src/components, src/app).");
+  }
   process.exit(0);
 }
 

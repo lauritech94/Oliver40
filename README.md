@@ -81,13 +81,54 @@ Guárdala, la usarás dos veces.
 
 ---
 
-## Si Vercel falla con «Cannot find module './content/words'»
+## Si Vercel dice «Cannot find module './content/words'»
 
-Significa que **GitHub no contiene la carpeta completa del código**. `src/lib/catalog.ts`
-busca exactamente `src/lib/content/words.ts`; no es un problema de Neon ni de Vercel.
+**No es que falte código:** hay **copias duplicadas y sueltas en la raíz** de GitHub.
 
-Cada error desaparece al copiar un archivo porque hay varios archivos incompletos. Sube de una
-vez la estructura completa:
+La prueba está en el propio log. Cuando un archivo está donde debe, Vercel escribe su ruta
+completa:
+
+```text
+./src/lib/content/words.ts:80:7     ← archivo real, dentro de src/
+```
+
+Pero el error de tu despliegue dice:
+
+```text
+./catalog.ts:3:52                   ← copia suelta en la raíz del repositorio
+```
+
+Solo aparece el nombre porque ese `catalog.ts` está **fuera de `src/`**. TypeScript compilaba
+esa copia antigua, cuyo import `./content/words` no puede resolver porque la carpeta `content/`
+solo existe dentro de `src/lib/`. La copia buena (`src/lib/catalog.ts`) sí estaba bien.
+
+Lo mismo pasaba antes con `./Puzzle.tsx` y `@/lib/puzzle-board`. Cada arreglo hacía desaparecer
+un error porque solo se arreglaba la copia huérfana; por eso parecía que «todo iba bien y de
+pronto no».
+
+### Ya está corregido automáticamente
+
+`tsconfig.json` ahora compila solo `src/`, `scripts/`, `drizzle/` y los archivos de configuración.
+Las copias sueltas de la raíz ya no pueden romper el build. Además, el `prebuild` las detecta y
+las lista como aviso para que las borres cuando puedas.
+
+**Qué verás en Vercel al desplegar esta versión:**
+
+```text
+> prebuild
+✓ Estructura completa: 58 archivos TypeScript/JavaScript revisados.
+⚠️  Hay copias sueltas en la raíz del repositorio...
+      · catalog.ts
+      · Puzzle.tsx
+```
+
+Esos archivos sobran: **los reales están dentro de `src/`** (`src/lib`, `src/components`,
+`src/app`). Puedes borrarlos de la raíz, pero **ya no bloquean**.
+
+Nada de esto afecta a la base de datos: no ejecutes `/setup` ni reinicies la partida. Las 420
+tarjetas, las preguntas y el progreso siguen intactos.
+
+La estructura completa que debe verse en GitHub:
 
 ```text
 src/
