@@ -1,5 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
+import { publicPuzzleMeta } from "./puzzle-images";
 import { games, players, tasks, type Game, type Task } from "@/db/schema";
 
 export async function getGameByCode(code: string): Promise<Game | null> {
@@ -56,7 +57,12 @@ export async function getGameState(code: string): Promise<GameState | null> {
     .orderBy(asc(tasks.playerId), asc(tasks.stepIndex));
 
   // Una respuesta fija escrita por el juez siempre manda sobre la ficha.
-  const resolve = (task: Task): TaskView => {
+  const resolve = (stored: Task): TaskView => {
+    // La foto se sirve por separado para no repetir imágenes grandes en el JSON del panel.
+    const task: Task = {
+      ...stored,
+      meta: publicPuzzleMeta(stored.id, stored.meta),
+    };
     const link = task.meta?.profile;
     if (!link || task.answer.trim()) {
       return { ...task, effectiveAnswer: task.answer };

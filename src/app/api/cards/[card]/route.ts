@@ -128,7 +128,9 @@ function publicTask(task: Task) {
     requiresJudge: task.requiresJudge,
     attempts: task.attempts,
     nonogram: task.meta?.nonogram ?? null,
-    puzzle: task.meta?.puzzle ?? null,
+    puzzle: task.meta?.puzzle
+      ? { ...task.meta.puzzle, image: `/api/puzzle-image/${task.id}`, word: task.answer.split("|")[0] }
+      : null,
     memorize: task.meta?.memorize ? { seconds: task.meta.memorize.seconds } : null,
   };
 }

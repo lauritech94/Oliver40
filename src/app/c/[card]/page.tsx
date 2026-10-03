@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Puzzle from "@/components/Puzzle";
 
 type PuzzleData = { image: string; size: number; word: string };
 
@@ -51,6 +52,7 @@ export default function CardPage() {
   const [wrong, setWrong] = useState(false);
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [requestError, setRequestError] = useState("");
   const [isMemorizing, setIsMemorizing] = useState(false);
   const [success, setSuccess] = useState<{ nextCard: number | null; finished: boolean } | null>(
     null,
@@ -66,25 +68,35 @@ export default function CardPage() {
   }, [load]);
 
   const send = useCallback(
-    async (value: string) => {
+    async (value: string): Promise<boolean> => {
       setBusy(true);
       setWrong(false);
       setPending(false);
-      const res = await fetch(`/api/cards/${card}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer: value }),
-      });
-      const json = await res.json();
-      setBusy(false);
-      if (json.correct) {
-        setSuccess({ nextCard: json.nextCard ?? null, finished: Boolean(json.finished) });
-      } else if (json.pending) {
-        setPending(true);
-      } else {
-        setWrong(true);
-        setAnswer("");
-        load();
+      setRequestError("");
+      try {
+        const res = await fetch(`/api/cards/${card}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answer: value }),
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json) throw new Error(json?.error ?? "No se pudo comprobar la respuesta. Inténtalo de nuevo.");
+        if (json.correct) {
+          setSuccess({ nextCard: json.nextCard ?? null, finished: Boolean(json.finished) });
+          return true;
+        }
+        if (json.pending) setPending(true);
+        else {
+          setWrong(true);
+          setAnswer("");
+          void load();
+        }
+        return false;
+      } catch (error) {
+        setRequestError(error instanceof Error ? error.message : "No se pudo contactar con el servidor.");
+        return false;
+      } finally {
+        setBusy(false);
       }
     },
     [card, load],
@@ -248,10 +260,11 @@ export default function CardPage() {
 
         {task.puzzle && (
           <Puzzle
+            key={task.id}
             image={task.puzzle.image}
             size={task.puzzle.size}
             word={task.puzzle.word}
-            onSolved={(word) => void send(word)}
+            onSolved={send}
           />
         )}
 
@@ -301,6 +314,12 @@ export default function CardPage() {
           </form>
         )}
 
+        {requestError && (
+          <p role="alert" className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
+            {requestError}
+          </p>
+        )}
+
         {wrong && (
           <p className="mt-4 animate-pulse rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-center text-sm font-semibold text-rose-200">
             ❌ No es correcto. Intentos: {task.attempts + 1}
@@ -332,190 +351,6 @@ export default function CardPage() {
       </div>
     </main>
   );
-}
-
-/* ───────────── Puzzle 8×8: intercambiar casillas para reconstruir la foto ───────────── */
-function Puzzle({
-  image,
-  size,
-  word,
-  onSolved,
-}: {
-  image: string;
-  size: number;
-  word: string;
-  onSolved: (word: string) => void;
-}) {
-  const total = size * size;
-  const [tiles, setTiles] = useState<number[]>(() => scrambledTiles(total));
-  const [selected, setSelected] = useState<number | null>(null);
-  const [hints, setHints] = useState(0);
-  const doneRef = useRef(false);
-
-  const solved = tiles.every((value, index) => value === index);
-
-  useEffect(() => {
-    if (solved && !doneRef.current) {
-      doneRef.current = true;
-      onSolved(word);
-    }
-  }, [solved, word, onSolved]);
-
-  function tap(index: number) {
-    if (solved) return;
-    if (selected === null) {
-      setSelected(index);
-      return;
-    }
-    if (selected === index) {
-      setSelected(null);
-      return;
-    }
-    setTiles((prev) => {
-      const next = [...prev];
-      [next[selected], next[index]] = [next[index], next[selected]];
-      return next;
-    });
-    setSelected(null);
-  }
-
-  /** Coloca en su sitio hasta 3 casillas intercambiando (nunca rompe el puzzle). */
-  function giveHint() {
-    setTiles((prev) => {
-      const next = [...prev];
-      const wrong = next.map((v, i) => (v === i ? -1 : i)).filter((i) => i >= 0);
-      for (let k = 0; k < 3 && wrong.length > 0; k += 1) {
-        const pickAt = Math.floor(Math.random() * wrong.length);
-        const idx = wrong.splice(pickAt, 1)[0];
-        if (next[idx] === idx) continue;
-        const cur = next.indexOf(idx);
-        [next[idx], next[cur]] = [next[cur], next[idx]];
-      }
-      return next;
-    });
-    setHints((h) => h + 1);
-    setSelected(null);
-  }
-
-  const [showFullRef, setShowFullRef] = useState(false);
-
-  return (
-    <div className="mt-4 rounded-2xl bg-slate-950/70 p-4">
-      <div className="flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-        <button
-          type="button"
-          onClick={() => setShowFullRef(!showFullRef)}
-          className="group relative shrink-0 overflow-hidden rounded-xl border-2 border-fuchsia-500/50 shadow-md transition hover:border-fuchsia-400 focus:outline-none"
-        >
-          <img
-            src={image}
-            alt="Foto de referencia"
-            className="h-28 w-28 object-cover sm:h-36 sm:w-36"
-          />
-          <span className="absolute bottom-0 inset-x-0 bg-slate-950/85 py-0.5 text-center text-[10px] font-bold text-fuchsia-300">
-            {showFullRef ? "Ocultar" : "Ampliar 🔍"}
-          </span>
-        </button>
-
-        <div className="flex-1 text-xs text-slate-300">
-          <p className="font-black text-sm text-fuchsia-300">Foto objetivo</p>
-          <p className="mt-1 leading-relaxed text-slate-400">
-            Toca una casilla y luego otra para intercambiarlas hasta reconstruir la foto del pescador.
-          </p>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950/80 px-2.5 py-1.5 font-mono font-bold text-emerald-300 border border-emerald-500/30">
-            <span>✓ {tiles.filter((v, i) => v === i).length}/{total} casillas</span>
-          </div>
-          {hints > 0 && (
-            <p className="mt-1 text-[11px] text-cyan-300">💡 {hints} pista{hints > 1 ? "s" : ""} usada{hints > 1 ? "s" : ""}</p>
-          )}
-        </div>
-      </div>
-
-      {showFullRef && (
-        <div className="mt-3 overflow-hidden rounded-xl border-2 border-fuchsia-400 bg-slate-900 p-2 text-center animate-fadeIn">
-          <p className="mb-2 text-xs font-bold text-fuchsia-200">Foto completa en alta resolución:</p>
-          <img
-            src={image}
-            alt="Foto completa de referencia"
-            className="mx-auto max-h-80 w-auto rounded-lg shadow-lg object-contain"
-          />
-        </div>
-      )}
-
-      <div
-        className="mt-3 grid gap-[2px] rounded-lg border border-slate-700 bg-slate-700 p-[2px]"
-        style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
-      >
-        {tiles.map((tileValue, index) => {
-          const row = Math.floor(tileValue / size);
-          const col = tileValue % size;
-          const isRight = tileValue === index;
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => tap(index)}
-              aria-label={`casilla ${index + 1}`}
-              className={`aspect-square w-full rounded-[3px] bg-cover transition-transform ${
-                selected === index ? "scale-95 ring-2 ring-fuchsia-400" : ""
-              } ${isRight ? "ring-1 ring-emerald-500/40" : ""}`}
-              style={{
-                backgroundImage: `url(${image})`,
-                backgroundSize: `${size * 100}% ${size * 100}%`,
-                backgroundPosition: `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {solved ? (
-        <div className="mt-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center">
-          <p className="text-2xl">🎉</p>
-          <p className="mt-1 font-bold text-emerald-200">¡Puzzle completado!</p>
-          <p className="mt-1 text-sm text-emerald-100/70">
-            Enviando la palabra <strong className="font-mono uppercase">{word}</strong>…
-          </p>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={giveHint}
-          className="mt-4 w-full rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
-        >
-          💡 Colocar 3 casillas en su sitio
-        </button>
-      )}
-    </div>
-  );
-}
-
-/**
- * Baraja dejando una parte de las casillas ya colocadas.
- * Siempre devuelve una permutación válida (intercambiando valores), de modo que
- * el puzzle sea siempre resoluble.
- */
-function scrambledTiles(total: number): number[] {
-  const arr = Array.from({ length: total }, (_, i) => i);
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-
-  // Se colocan solas ~45% de las casillas intercambiando: el puzzle sigue siendo un reto pero viable.
-  const pending = Array.from({ length: total }, (_, i) => i);
-  const fix = Math.floor(total * 0.45);
-  for (let k = 0; k < fix; k += 1) {
-    const at = pending.splice(Math.floor(Math.random() * pending.length), 1)[0];
-    if (arr[at] === at) continue;
-    const cur = arr.indexOf(at);
-    [arr[at], arr[cur]] = [arr[cur], arr[at]];
-  }
-
-  if (arr.every((v, i) => v === i)) {
-    [arr[0], arr[1]] = [arr[1], arr[0]];
-  }
-  return arr;
 }
 
 /* ───────────── Memoria: la secuencia solo se ve unos segundos ───────────── */

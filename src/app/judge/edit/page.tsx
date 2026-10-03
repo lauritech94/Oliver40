@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import PuzzleImageEditor from "@/components/PuzzleImageEditor";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TaskRow = {
@@ -204,6 +205,8 @@ export default function JudgeEditPage() {
           {error}
         </p>
       )}
+
+      <PuzzleImageEditor />
 
       <div className="mt-5 grid gap-2 sm:grid-cols-3">
         <select
