@@ -252,6 +252,26 @@ instalación nueva.
 
 ---
 
+## 🔥 Fase final: el Reto de los Récords
+
+Cuando un jugador termina sus **15 pruebas**, en lugar de un simple cartel de fin se desbloquea
+la **Fase Final**: dos minijuegos de velocidad y reflejos, y una clasificación general.
+
+| Minijuego | Qué se mide | Marca |
+| --------- | ----------- | ----- |
+| ⚡ **Reflejos de Relámpago** | Milisegundos que tardas en pulsar cuando la pantalla se pone verde. 3 rondas, se guarda la mejor. Si pulsas antes, falta. | Menos ms = mejor |
+| 🔢 **Caza de Números** | Tiempo en tocar los números del 1 al 16 en orden. El cronómetro arranca con el primero. | Menos s = mejor |
+
+* Los jugadores entran desde `/minigames` (o desde el botón que aparece al terminar las 15).
+* Cada jugador puede repetir las veces que quiera: **se guarda siempre su mejor marca**.
+* La clasificación está en **`/ranking`** y se actualiza sola. Ideal para proyectarla en una tele
+  durante la fiesta: hay podio, récord de reflejos, récord de números y tabla general.
+
+> La fase final **no toca las 420 tarjetas**. Se juega al terminar el recorrido, así que el
+> material impreso sigue siendo válido.
+
+---
+
 ## 🎮 El día de la gymkhana
 
 1. Deja el **QR impreso** en la mesa de salida.

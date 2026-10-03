@@ -103,10 +103,29 @@ export default function PlayPage() {
       </div>
 
       {finished ? (
-        <div className="mt-6 rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-center">
-          <p className="text-5xl">🏆</p>
-          <h2 className="mt-3 text-2xl font-black text-emerald-200">¡Has terminado las 15!</h2>
-          <p className="mt-1 text-sm text-emerald-100/70">Avisa a los jueces.</p>
+        <div className="mt-6 rounded-3xl border border-amber-500/40 bg-gradient-to-b from-amber-500/20 to-slate-900/60 p-7 text-center">
+          <p className="text-5xl">🔥</p>
+          <h2 className="mt-3 text-3xl font-black text-amber-100">
+            ¡Has terminado las 15 pruebas!
+          </h2>
+          <p className="mt-2 text-sm text-amber-200/80">
+            Se ha desbloqueado la <strong>Fase Final: El Reto de los Récords</strong>. Dos
+            minijuegos de velocidad y reflejos para conseguir la mejor marca.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/minigames"
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-fuchsia-500 px-7 py-4 text-lg font-black text-white shadow-lg shadow-amber-500/25"
+            >
+              🔥 Jugar la fase final →
+            </Link>
+            <Link
+              href="/ranking"
+              className="rounded-xl border border-amber-500/40 px-6 py-3.5 font-bold text-amber-200 hover:bg-amber-500/10"
+            >
+              Ver clasificación
+            </Link>
+          </div>
         </div>
       ) : me.currentCard !== null ? (
         <div className="mt-6 rounded-2xl border border-fuchsia-400/50 bg-fuchsia-500/10 p-5">

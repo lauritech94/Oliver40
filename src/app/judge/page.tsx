@@ -163,6 +163,12 @@ export default function JudgeDashboard() {
           >
             🔗 Enlaces de prueba (420)
           </Link>
+          <Link
+            href="/ranking"
+            className="rounded-xl border border-amber-500/40 px-5 py-3 font-bold text-amber-200 hover:bg-amber-500/10"
+          >
+            🏆 Ranking en vivo
+          </Link>
           <button
             onClick={() => void resetProgress()}
             className="rounded-xl border border-slate-700 px-4 py-3 text-sm font-bold text-slate-300 hover:border-rose-500/50 hover:text-rose-200"

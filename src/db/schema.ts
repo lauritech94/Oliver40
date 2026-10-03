@@ -88,6 +88,38 @@ export const tasks = pgTable(
   ],
 );
 
+/**
+ * Récords de la Fase Final (minijuegos). Se guarda el MEJOR resultado de cada
+ * jugador en cada minijuego, junto con los intentos que ha hecho.
+ * El valor se guarda en milisegundos y MEJOR = MÁS BAJO en los dos juegos.
+ */
+export const minigameScores = pgTable(
+  "minigame_scores",
+  {
+    id: serial("id").primaryKey(),
+    gameId: integer("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    playerId: integer("player_id")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    /** "reaccion" (reflejos) o "numeros" (caza de números). */
+    slug: varchar("slug", { length: 24 }).notNull(),
+    /** Mejor marca en milisegundos. En los dos juegos, menos = mejor. */
+    bestScore: integer("best_score").notNull().default(0),
+    /** Última marca conseguida (ms). */
+    lastScore: integer("last_score").notNull().default(0),
+    /** Cuántas veces ha jugado este minijuego. */
+    attempts: integer("attempts").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("minigame_scores_player_slug_idx").on(table.playerId, table.slug),
+    index("minigame_scores_game_idx").on(table.gameId),
+  ],
+);
+
 export type Game = typeof games.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type MinigameScore = typeof minigameScores.$inferSelect;

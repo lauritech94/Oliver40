@@ -77,4 +77,30 @@ CREATE INDEX IF NOT EXISTS "players_game_idx" ON "players" USING btree ("game_id
 CREATE UNIQUE INDEX IF NOT EXISTS "players_game_slot_idx" ON "players" USING btree ("game_id","slot");
 CREATE UNIQUE INDEX IF NOT EXISTS "tasks_game_card_idx" ON "tasks" USING btree ("game_id","card_number");
 CREATE UNIQUE INDEX IF NOT EXISTS "tasks_player_step_idx" ON "tasks" USING btree ("player_id","step_index");
+
+CREATE TABLE IF NOT EXISTS "minigame_scores" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "game_id" integer NOT NULL,
+  "player_id" integer NOT NULL,
+  "slug" varchar(24) NOT NULL,
+  "best_score" integer DEFAULT 0 NOT NULL,
+  "last_score" integer DEFAULT 0 NOT NULL,
+  "attempts" integer DEFAULT 0 NOT NULL,
+  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'minigame_scores_game_id_games_id_fk') THEN
+    ALTER TABLE "minigame_scores" ADD CONSTRAINT "minigame_scores_game_id_games_id_fk"
+      FOREIGN KEY ("game_id") REFERENCES "public"."games"("id") ON DELETE cascade ON UPDATE no action;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'minigame_scores_player_id_players_id_fk') THEN
+    ALTER TABLE "minigame_scores" ADD CONSTRAINT "minigame_scores_player_id_players_id_fk"
+      FOREIGN KEY ("player_id") REFERENCES "public"."players"("id") ON DELETE cascade ON UPDATE no action;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "minigame_scores_player_slug_idx" ON "minigame_scores" USING btree ("player_id","slug");
+CREATE INDEX IF NOT EXISTS "minigame_scores_game_idx" ON "minigame_scores" USING btree ("game_id");
 `;

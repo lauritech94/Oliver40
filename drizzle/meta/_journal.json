@@ -8,6 +8,13 @@
       "when": 1790960315438,
       "tag": "0000_lame_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791038648063,
+      "tag": "0001_panoramic_moondragon",
+      "breakpoints": true
     }
   ]
 }
