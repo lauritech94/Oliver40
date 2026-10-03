@@ -52,6 +52,7 @@ export default function JudgeDashboard() {
   const [state, setState] = useState<GameState | null>(null);
   const [tab, setTab] = useState<Tab>("progreso");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [origin, setOrigin] = useState("");
@@ -99,12 +100,20 @@ export default function JudgeDashboard() {
 
   async function resetProgress() {
     if (!confirm("¿Reiniciar el progreso de las 28 personas? Las 420 asignaciones y los códigos NFC no cambiarán.")) return;
-    const res = await fetch("/api/judge/reset-progress", { method: "POST" });
-    if (!res.ok) {
-      setError("No se pudo reiniciar el progreso.");
-      return;
+    try {
+      const res = await fetch("/api/judge/reset-progress", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        setError(data.error ?? "No se pudo reiniciar el progreso.");
+        return;
+      }
+      setError("");
+      setNotice(data.message ?? "Progreso reiniciado.");
+      setTimeout(() => setNotice(""), 5000);
+      await load();
+    } catch {
+      setError("No se pudo contactar con el servidor. Comprueba tu conexión.");
     }
-    await load();
   }
 
   async function validate(taskId: number) {
@@ -181,6 +190,12 @@ export default function JudgeDashboard() {
       {error && (
         <p className="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
           {error}
+        </p>
+      )}
+
+      {notice && (
+        <p className="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-200">
+          {notice}
         </p>
       )}
 
