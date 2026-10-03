@@ -6,7 +6,7 @@ import type { PlayerInfo } from "./types";
 export const FIXED_GAME_CODE = "GYMKHANA";
 export const FIXED_GAME_NAME = "La gymkhana";
 export const FIXED_CARD_COUNT = 420;
-export const FIXED_PLAN_VERSION = "gymkhana-28-v3";
+export const FIXED_PLAN_VERSION = "gymkhana-28-v5";
 
 /** Orden oficial de la lista de jugadores: también fija su número J01…J28. */
 export const FIXED_PLAYER_NAMES = [

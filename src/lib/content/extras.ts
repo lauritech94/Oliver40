@@ -34,10 +34,8 @@ export const TRAMPAS: readonly { q: string; a: string; h: string }[] = [
 
 /* ───────────── Sustituto de NONOGRAMA · PUZZLE 8×8 ───────────── */
 export const PUZZLE_IMAGES = [
-  "/images/puzzle/1.jpg",
-  "/images/puzzle/2.jpg",
-  "/images/puzzle/3.jpg",
-  "/images/puzzle/4.jpg",
+  "/images/puzzle/pescador_exact.jpg",
+  "/images/puzzle/pescador.jpg",
 ] as const;
 
 export const PUZZLE_SIZE = 8;
@@ -50,66 +48,58 @@ export const PUZZLE_WORDS: readonly string[] = [
   "familia", "fiesta", "libertad", "victoria",
 ];
 
-/* ───────────── CÓDIGO DE LA NEVERA (una sola hoja escondida) ───────────── */
-export const FRIDGE_CLUES: readonly { q: string; a: string }[] = [
-  { q: "Tengo agujas pero no pincho, tengo números pero no sé contar.", a: "reloj" },
-  { q: "Tiene hojas pero no es árbol, tiene lomo pero no es animal.", a: "libro" },
-  { q: "Oro parece, plata no es.", a: "platano" },
-  { q: "Cuanto más le quitas, más grande se hace.", a: "agujero" },
-  { q: "Tiene cuatro patas y no anda, tiene respaldo y no habla.", a: "silla" },
-  { q: "Soy alta cuando soy joven y baja cuando soy vieja.", a: "vela" },
-  { q: "Anda sin pies y llora sin ojos.", a: "nube" },
-  { q: "Tengo un ojo y no veo nada.", a: "aguja" },
-  { q: "Tiene cama y no duerme, tiene boca y no habla.", a: "rio" },
-  { q: "Blanco por dentro, verde por fuera. Si quieres que te lo diga, espera.", a: "pera" },
-  { q: "Vuela sin alas, silba sin boca, golpea sin manos.", a: "viento" },
-  { q: "Tiene corona y no es rey, tiene escamas y no es pez.", a: "pina" },
+/* ───────────── CÓDIGO DE LA NEVERA (Simplificado: 1 adivinanza fija en la app) ───────────── */
+/**
+ * 28 Adivinanzas sencillas de cosas cotidianas de la casa / comida.
+ * En la NEVERA hay una única hoja que es una lista numerada:
+ *   1 = MANZANA
+ *   2 = HIELO
+ *   ...
+ *   28 = PAN
+ * La app le dice al jugador una adivinanza directa (p. ej. "Tengo lomos pero no espalda...").
+ * El jugador adivina la palabra ("LIBRO") y va a la nevera a buscar qué NÚMERO tiene al lado.
+ * Ese número es la respuesta. Súper simple, no requiere fórmulas ni cálculos raros.
+ */
+export const FRIDGE_RIDDLES: readonly { q: string; word: string; num: number }[] = [
+  { q: "Tiene lomo y no es animal, tiene hojas y no es árbol. ¿Qué soy?", word: "LIBRO", num: 14 },
+  { q: "Blanco por dentro, verde por fuera, si quieres que te lo diga, espera.", word: "PERA", num: 27 },
+  { q: "Oro parece, plata no es, el que no lo adivine bien tonto es.", word: "PLATANO", num: 9 },
+  { q: "Tengo agujas pero no coso, doy la hora y no reposo.", word: "RELOJ", num: 3 },
+  { q: "Cuanto más seca, más mojada queda.", word: "TOALLA", num: 18 },
+  { q: "Soy frío como el invierno, si me dejas al sol me derrito.", word: "HIELO", num: 5 },
+  { q: "Tengo dientes pero no muerdo, peino tu pelo si me acuerdo.", word: "PEINE", num: 22 },
+  { q: "Cuanto más le quitas, más grande se hace.", word: "AGUJERO", num: 11 },
+  { q: "Tiene cuatro patas y no camina, te sientas en ella en la cocina.", word: "SILLA", num: 16 },
+  { q: "Soy alta de joven y bajita de vieja, alumbro con llama que no se queja.", word: "VELA", num: 8 },
+  { q: "Anda sin pies y llora sin ojos en el cielo.", word: "NUBE", num: 25 },
+  { q: "Tengo un solo ojo y no puedo ver nada, paso hilos en la costurada.", word: "AGUJA", num: 12 },
+  { q: "Tiene corona y no es rey, piel con escamas sin ser pez.", word: "PIÑA", num: 30 },
+  { q: "Si me nombras, desaparezco al instante.", word: "SILENCIO", num: 7 },
+  { q: "Guarda monedas en el cojín y te acuestas en él sin fin.", word: "SOFA", num: 2 },
+  { q: "Te copio sin saber quién eres y no digo ni una palabra.", word: "ESPEJO", num: 19 },
+  { q: "Vuela sin alas, silba sin boca y mueve los árboles cuando toca.", word: "VIENTO", num: 24 },
+  { q: "Redondo, redondo, barril sin fondo que llevas en el dedo.", word: "ANILLO", num: 1 },
+  { q: "Doy vueltas sin marearme y lavo la ropa hasta dejarla limpia.", word: "LAVADORA", num: 15 },
+  { q: "Subo y bajo pisos sin cansarme nunca.", word: "ASCENSOR", num: 28 },
+  { q: "Tengo teclas y no abro puertas, toco música con notas despiertas.", word: "PIANO", num: 6 },
+  { q: "Verde por fuera, roja por dentro, con pepitas negras en el centro.", word: "SANDIA", num: 21 },
+  { q: "Te protege del agua cuando cae del cielo y lo abres con anhelo.", word: "PARAGUAS", num: 13 },
+  { q: "Guardo tus pasos junto a la puerta y me pisas despierta.", word: "FELPUDO", num: 4 },
+  { q: "Doy luz de noche cuando aprietas el botón en la pared.", word: "BOMBILLA", num: 20 },
+  { q: "Tiene cuello pero no cabeza, guarda vino o cerveza con destreza.", word: "BOTELLA", num: 10 },
+  { q: "Sirve para cortar papel y tiene dos aros para tus dedos.", word: "TIJERAS", num: 26 },
+  { q: "Se come con salsa o queso, redonda en el horno con buen beso.", word: "PIZZA", num: 17 },
 ];
 
-function onlyLetters(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
-}
-
-export function digitSum(value: number): number {
-  return String(value)
-    .split("")
-    .reduce((sum, ch) => sum + Number(ch), 0);
-}
-
-/** Pista A = suma de cifras (1–10). Pista B = A + 2 (3–12). */
-export function fridgeClueIndexes(slot: number): [number, number] {
-  const a = digitSum(slot);
-  return [a, a + 2 > 12 ? a + 2 - 12 : a + 2];
-}
-
-/** Código = inicial pista A + inicial pista B + número de jugador (2 cifras). */
-export function fridgeCode(slot: number): string {
-  const [ia, ib] = fridgeClueIndexes(slot);
-  const a = onlyLetters(FRIDGE_CLUES[ia - 1].a)[0];
-  const b = onlyLetters(FRIDGE_CLUES[ib - 1].a)[0];
-  return `${a}${b}${String(slot).padStart(2, "0")}`;
-}
-
 export function fridgeDrafts(players: PlayerInfo[]): Draft[] {
-  const steps = [
-    "1) Calcula tu PISTA A: suma las dos cifras de tu número de jugador (J07 → 0+7 = 7).",
-    "2) Tu PISTA B es la PISTA (A + 2). Si pasa de 12, quítale 12.",
-    "3) Resuelve esas dos pistas.",
-    "4) Tu código es: inicial de la respuesta A + inicial de la respuesta B + tu número (2 cifras).",
-    "Ejemplo: J07 con pistas 7 y 9, si sus respuestas empiezan por N y por R → código NR07.",
-  ];
-  return players.map((player) => {
-    const [ia, ib] = fridgeClueIndexes(player.slot);
+  return players.map((player, index) => {
+    const item = FRIDGE_RIDDLES[index % FRIDGE_RIDDLES.length];
     return {
-      title: "El código de la nevera",
-      prompt: `Busca la HOJA pegada por dentro de la puerta de la NEVERA. Tiene 12 pistas y una regla.\n\n${steps.join("\n")}\n\nTus pistas son la ${ia} y la ${ib}. Escribe aquí tu código.`,
-      answer: fridgeCode(player.slot),
-      hint: "El código tiene 4 caracteres: 2 letras y tu número de jugador. Cada pista se resuelve con una sola palabra.",
-      judgeNote: `Hoja única en la NEVERA (imprimir en /material). Pistas ${ia} y ${ib} → código ${fridgeCode(player.slot)}`,
+      title: "El misterio helado",
+      prompt: `Resuelve esta adivinanza:\n\n«${item.q}»\n\nCuando sepas de qué objeto se trata, tendrás que buscar un lugar de la casa donde hace mucho frío día y noche... Ábrelo y mira por dentro: hay una lista con objetos y números. Escribe aquí el NÚMERO correspondiente a tu objeto.`,
+      answer: String(item.num),
+      hint: `«Hace frío, mírame por dentro...» ¿Dónde en la casa hace frío constante y se guarda la comida? Allí dentro busca tu palabra (${item.word}) y escribe su número.`,
+      judgeNote: `Hoja dentro de la NEVERA: «${item.word}» tiene el número ${item.num}`,
     };
   });
 }

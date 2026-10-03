@@ -51,6 +51,7 @@ export default function CardPage() {
   const [wrong, setWrong] = useState(false);
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [isMemorizing, setIsMemorizing] = useState(false);
   const [success, setSuccess] = useState<{ nextCard: number | null; finished: boolean } | null>(
     null,
   );
@@ -254,7 +255,13 @@ export default function CardPage() {
           />
         )}
 
-        {task.memorize && <Memorize card={card} seconds={task.memorize.seconds} />}
+        {task.memorize && (
+          <Memorize
+            card={card}
+            seconds={task.memorize.seconds}
+            onMemorizingChange={setIsMemorizing}
+          />
+        )}
 
         {task.requiresJudge && (
           <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
@@ -263,7 +270,18 @@ export default function CardPage() {
           </p>
         )}
 
-        {(!task.puzzle || wrong || pending) && (
+        {isMemorizing && (
+          <div className="mt-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-center animate-pulse">
+            <p className="text-sm font-black text-amber-200 uppercase tracking-widest">
+              🔒 Cajetín bloqueado
+            </p>
+            <p className="mt-1 text-xs text-amber-200/80">
+              ¡Memoriza la secuencia mentalmente! El cajetín de respuesta se desbloqueará cuando se agote el tiempo.
+            </p>
+          </div>
+        )}
+
+        {!isMemorizing && (!task.puzzle || wrong || pending) && (
           <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
             <input
               value={answer}
@@ -379,23 +397,50 @@ function Puzzle({
     setSelected(null);
   }
 
+  const [showFullRef, setShowFullRef] = useState(false);
+
   return (
     <div className="mt-4 rounded-2xl bg-slate-950/70 p-4">
-      <div className="flex items-center gap-3">
-        <img
-          src={image}
-          alt="Foto de referencia"
-          className="h-20 w-20 rounded-lg border border-slate-700 object-cover"
-        />
-        <div className="flex-1 text-xs text-slate-400">
-          <p className="font-bold text-slate-300">Miniatura de referencia</p>
-          <p className="mt-1">Toca dos casillas para intercambiarlas. Reconstruye la foto.</p>
-          <p className="mt-1 text-slate-500">
-            {tiles.filter((v, i) => v === i).length}/{total} casillas en su sitio
-            {hints > 0 ? ` · ${hints} pista${hints > 1 ? "s" : ""}` : ""}
+      <div className="flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+        <button
+          type="button"
+          onClick={() => setShowFullRef(!showFullRef)}
+          className="group relative shrink-0 overflow-hidden rounded-xl border-2 border-fuchsia-500/50 shadow-md transition hover:border-fuchsia-400 focus:outline-none"
+        >
+          <img
+            src={image}
+            alt="Foto de referencia"
+            className="h-28 w-28 object-cover sm:h-36 sm:w-36"
+          />
+          <span className="absolute bottom-0 inset-x-0 bg-slate-950/85 py-0.5 text-center text-[10px] font-bold text-fuchsia-300">
+            {showFullRef ? "Ocultar" : "Ampliar 🔍"}
+          </span>
+        </button>
+
+        <div className="flex-1 text-xs text-slate-300">
+          <p className="font-black text-sm text-fuchsia-300">Foto objetivo</p>
+          <p className="mt-1 leading-relaxed text-slate-400">
+            Toca una casilla y luego otra para intercambiarlas hasta reconstruir la foto del pescador.
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950/80 px-2.5 py-1.5 font-mono font-bold text-emerald-300 border border-emerald-500/30">
+            <span>✓ {tiles.filter((v, i) => v === i).length}/{total} casillas</span>
+          </div>
+          {hints > 0 && (
+            <p className="mt-1 text-[11px] text-cyan-300">💡 {hints} pista{hints > 1 ? "s" : ""} usada{hints > 1 ? "s" : ""}</p>
+          )}
         </div>
       </div>
+
+      {showFullRef && (
+        <div className="mt-3 overflow-hidden rounded-xl border-2 border-fuchsia-400 bg-slate-900 p-2 text-center animate-fadeIn">
+          <p className="mb-2 text-xs font-bold text-fuchsia-200">Foto completa en alta resolución:</p>
+          <img
+            src={image}
+            alt="Foto completa de referencia"
+            className="mx-auto max-h-80 w-auto rounded-lg shadow-lg object-contain"
+          />
+        </div>
+      )}
 
       <div
         className="mt-3 grid gap-[2px] rounded-lg border border-slate-700 bg-slate-700 p-[2px]"
@@ -474,20 +519,33 @@ function scrambledTiles(total: number): number[] {
 }
 
 /* ───────────── Memoria: la secuencia solo se ve unos segundos ───────────── */
-function Memorize({ card, seconds }: { card: string; seconds: number }) {
+function Memorize({
+  card,
+  seconds,
+  onMemorizingChange,
+}: {
+  card: string;
+  seconds: number;
+  onMemorizingChange?: (active: boolean) => void;
+}) {
   const [text, setText] = useState<string | null>(null);
   const [left, setLeft] = useState(0);
   const [views, setViews] = useState(0);
 
   useEffect(() => {
-    if (text === null) return;
+    if (text === null) {
+      onMemorizingChange?.(false);
+      return;
+    }
+    onMemorizingChange?.(true);
     if (left <= 0) {
       setText(null);
+      onMemorizingChange?.(false);
       return;
     }
     const timer = setTimeout(() => setLeft((l) => l - 1), 1000);
     return () => clearTimeout(timer);
-  }, [text, left]);
+  }, [text, left, onMemorizingChange]);
 
   async function show() {
     const res = await fetch(`/api/cards/${card}`, {
@@ -517,13 +575,13 @@ function Memorize({ card, seconds }: { card: string; seconds: number }) {
           <button
             type="button"
             onClick={show}
-            className="rounded-xl bg-cyan-500 px-5 py-3 font-black text-slate-950"
+            className="rounded-xl bg-cyan-500 px-5 py-3 font-black text-slate-950 shadow-md transition hover:bg-cyan-400"
           >
             👁️ {views === 0 ? `Mostrar (${seconds} s)` : "Volver a mirar"}
           </button>
           <p className="mt-2 text-xs text-slate-500">
             {views === 0
-              ? "Solo se ve unos segundos. ¡Prepárate!"
+              ? "Solo se ve unos segundos. El cajetín de abajo se bloqueará mientras miras."
               : `Lo has mirado ${views} ${views === 1 ? "vez" : "veces"} (los jueces lo ven).`}
           </p>
         </>

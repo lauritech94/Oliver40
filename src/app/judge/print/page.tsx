@@ -6,7 +6,7 @@ import { ensureFixedGame } from "@/lib/fixed-game";
 import { FIXED_GAME_CODE, FIXED_PLAN_VERSION, FIXED_PLAYER_NAMES } from "@/lib/fixed-plan";
 import { getGameState } from "@/lib/queries";
 import { CODE_KEYS, keyNumbers } from "@/lib/generators";
-import { FRIDGE_CLUES, fridgeCode, fridgeClueIndexes } from "@/lib/content/extras";
+import { FRIDGE_RIDDLES } from "@/lib/content/extras";
 
 export const dynamic = "force-dynamic";
 
@@ -242,7 +242,7 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
           5 · Papel compartido: código escondido
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Imprime una sola copia de la tabla maestra y pégala por dentro de la puerta de la nevera.
+          Imprime una sola copia de la tabla maestra y escóndela dentro de un libro de la estantería (con un post-it o entre páginas).
           Todos usan ese mismo papel; la secuencia numérica personal de cada uno descifra una palabra diferente.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 print:grid-cols-2">
@@ -276,26 +276,18 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
           código de las demás filas.
         </p>
         <article className="mt-4 break-inside-avoid rounded-lg border-2 border-slate-900 p-4">
-          <h3 className="text-lg font-black">HOJA «EL CÓDIGO DE LA NEVERA»</h3>
+          <h3 className="text-lg font-black">HOJA «EL MISTERIO HELADO» (Pegar dentro de la nevera)</h3>
           <p className="text-xs text-slate-600">
-            Imprime UNA sola copia y pégala por dentro de la puerta de la nevera. Esta hoja NO
-            lleva respuestas.
+            Imprime UNA sola copia de esta tabla y pégala por dentro de la puerta de la nevera.
+            Al jugador la app no le dice la palabra &quot;nevera&quot; directamente, sino la pista &quot;hace frío, mírame por dentro...&quot; junto a una adivinanza de un objeto.
+            Cuando lo averigua, abre la nevera, busca ese objeto en la tabla y anota el NÚMERO que tiene asignado.
           </p>
-          <p className="mt-3 border-y border-slate-300 py-2 text-sm">
-            <strong>1)</strong> Calcula tu PISTA A: suma las dos cifras de tu número de jugador
-            (J07 → 0+7 = 7).<br />
-            <strong>2)</strong> Tu PISTA B es la PISTA (A + 2). Si pasa de 12, quítale 12.
-            <br />
-            <strong>3)</strong> Resuelve esas dos pistas.<br />
-            <strong>4)</strong> Tu código es: <em>inicial de la respuesta A + inicial de la
-            respuesta B + tu número (2 cifras)</em>. Ejemplo: pistas 7 y 9 con respuestas que
-            empiezan por N y R, jugador J07 → <strong>NR07</strong>.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-x-5 text-xs sm:grid-cols-3">
-            {FRIDGE_CLUES.map((clue, index) => (
-              <p key={index} className="border-b border-slate-200 py-1">
-                <strong>{index + 1}.</strong> «{clue.q}»
-              </p>
+          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-xs sm:grid-cols-4">
+            {FRIDGE_RIDDLES.map((item) => (
+              <div key={item.word} className="flex justify-between border-b border-slate-200 py-1">
+                <span className="font-semibold text-slate-800">{item.word}</span>
+                <span className="font-black text-fuchsia-700 font-mono text-sm">{item.num}</span>
+              </div>
             ))}
           </div>
         </article>
@@ -305,27 +297,29 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
           <thead>
             <tr className="bg-slate-100 uppercase">
               <th className="px-2 py-1">Jugador</th>
-              <th className="px-2 py-1">Pistas</th>
-              <th className="px-2 py-1">Respuestas</th>
-              <th className="px-2 py-1">Código</th>
+              <th className="px-2 py-1">Adivinanza</th>
+              <th className="px-2 py-1">Palabra en nevera</th>
+              <th className="px-2 py-1">Número (solución)</th>
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: FIXED_PLAYER_NAMES.length }, (_, index) => index + 1).map((slot) => {
-              const [ia, ib] = fridgeClueIndexes(slot);
+            {Array.from({ length: FIXED_PLAYER_NAMES.length }, (_, index) => index).map((idx) => {
+              const item = FRIDGE_RIDDLES[idx % FRIDGE_RIDDLES.length];
+              const slot = idx + 1;
               return (
                 <tr key={slot} className="border-b border-slate-200">
                   <td className="px-2 py-1 font-mono font-bold">
-                    J{String(slot).padStart(2, "0")} · {FIXED_PLAYER_NAMES[slot - 1]}
+                    J{String(slot).padStart(2, "0")} · {FIXED_PLAYER_NAMES[idx]}
                   </td>
-                  <td className="px-2 py-1">
-                    {ia} y {ib}
+                  <td className="px-2 py-1 text-slate-600">
+                    «{item.q.slice(0, 45)}…»
                   </td>
-                  <td className="px-2 py-1">
-                    {FRIDGE_CLUES[ia - 1].a.toUpperCase()} ·{" "}
-                    {FRIDGE_CLUES[ib - 1].a.toUpperCase()}
+                  <td className="px-2 py-1 font-bold">
+                    {item.word}
                   </td>
-                  <td className="px-2 py-1 font-mono text-sm font-black">{fridgeCode(slot)}</td>
+                  <td className="px-2 py-1 font-mono text-base font-black text-fuchsia-700">
+                    {item.num}
+                  </td>
                 </tr>
               );
             })}
@@ -363,53 +357,39 @@ export default async function JudgePrintPage({ searchParams }: { searchParams: S
           align-items: center;
           justify-content: center;
           height: 86mm;
-          border: 2.5pt solid #0f172a;
-          border-radius: 5mm;
-          background:
-            radial-gradient(70% 55% at 50% 0%, rgba(168, 85, 247, 0.16), transparent 70%),
-            radial-gradient(60% 45% at 50% 100%, rgba(34, 211, 238, 0.14), transparent 70%),
-            #ffffff;
-          box-shadow: inset 0 0 0 1.2mm #ffffff, inset 0 0 0 1.6mm #cbd5f5;
+          border: 3pt solid #0f172a;
+          border-radius: 4mm;
+          background: #ffffff;
           color: #0f172a;
           text-align: center;
           overflow: hidden;
         }
         .game-card__brand {
-          position: absolute;
-          top: 6mm;
-          font-size: 8pt;
-          font-weight: 800;
-          letter-spacing: 0.42em;
-          text-indent: 0.42em;
-          color: #7c3aed;
+          display: none;
         }
         .game-card__label {
-          font-size: 12pt;
-          font-weight: 800;
-          letter-spacing: 0.34em;
-          text-indent: 0.34em;
-          color: #475569;
+          font-size: 13pt;
+          font-weight: 900;
+          letter-spacing: 0.35em;
+          text-indent: 0.35em;
+          color: #0f172a;
         }
         .game-card__number {
-          font-size: 58pt;
+          font-size: 64pt;
           font-weight: 900;
           line-height: 1;
           font-variant-numeric: tabular-nums;
-          margin-top: 1mm;
+          margin-top: 2mm;
+          color: #0f172a;
         }
         .game-card__nfc {
-          width: 16mm;
-          height: 11mm;
-          margin-top: 4mm;
-          color: #7c3aed;
+          width: 20mm;
+          height: 14mm;
+          margin-top: 5mm;
+          color: #0f172a;
         }
         .game-card__foot {
-          position: absolute;
-          bottom: 6mm;
-          font-size: 8pt;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          color: #64748b;
+          display: none;
         }
         @media print {
           @page { size: A4; margin: 8mm; }
