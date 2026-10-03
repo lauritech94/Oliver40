@@ -93,14 +93,32 @@ export default function JoinPage() {
           </p>
           <Link
             href="/play"
-            className="mt-6 inline-block rounded-xl bg-fuchsia-500 px-6 py-3 font-black text-white"
+            className="mt-6 inline-block rounded-xl bg-fuchsia-500 px-6 py-3 font-black text-white shadow-lg shadow-fuchsia-500/25"
           >
             Ir a mi tablero →
           </Link>
         </div>
-        <p className="mt-5 text-xs text-slate-600">
-          ¿No eres {session.name}? Pide a un juez que te cambie desde su panel.
-        </p>
+
+        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400">
+          <p className="font-semibold text-slate-300">¿Estás probando el juego o eres juez?</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                await fetch("/api/logout", { method: "POST" });
+                window.location.reload();
+              }}
+              className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-1.5 font-bold text-rose-300 hover:bg-rose-500/20"
+            >
+              🔓 Cerrar sesión de {session.name}
+            </button>
+            <Link
+              href="/judge/links"
+              className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 font-bold text-cyan-200 hover:bg-cyan-500/20"
+            >
+              🔗 Cambiar a cualquier jugador →
+            </Link>
+          </div>
+        </div>
       </main>
     );
   }

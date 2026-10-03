@@ -204,6 +204,12 @@ export default function PlayPage() {
           </ol>
         </details>
       )}
+
+      <footer className="mt-12 text-center text-xs text-slate-600">
+        <Link href="/judge/links" className="text-slate-500 hover:text-cyan-400 hover:underline">
+          🛠️ Modo pruebas: panel de jueces / cambiar de jugador →
+        </Link>
+      </footer>
     </main>
   );
 }
