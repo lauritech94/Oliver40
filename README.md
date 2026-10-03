@@ -81,6 +81,36 @@ Guárdala, la usarás dos veces.
 
 ---
 
+## Si Vercel falla con «Cannot find module '@/lib/puzzle-board'»
+
+No es un problema de Neon ni del progreso: la compilación no encuentra un archivo del código.
+El alias `@/` de este proyecto apunta a `src/`, así que ese import antiguo buscaba exactamente
+`src/lib/puzzle-board.ts`. Subir `puzzle-board.ts` a la raíz no sirve.
+
+**La versión actual de `src/components/Puzzle.tsx` ya es autocontenida:** incluye sus cuatro
+funciones de tablero y solo importa React. Se conserva `src/lib/puzzle-board.ts` por compatibilidad
+con versiones anteriores, pero el componente actualizado ya no lo necesita.
+
+### Corregirlo desde la web de GitHub
+
+1. Abre tu repositorio, entra en `src/components/` y sustituye **`Puzzle.tsx`** por la versión
+   actual de este proyecto. Si no existe esa carpeta, crea el archivo usando la ruta completa
+   `src/components/Puzzle.tsx` en «Add file → Create new file» y copia su contenido actualizado.
+2. Si tienes además un **`Puzzle.tsx` suelto en la raíz**, elimina esa copia antigua. Aunque no
+   se use, TypeScript revisa todos los archivos `.tsx` y esa copia puede seguir rompiendo el build.
+3. Guarda los cambios en la rama que despliega Vercel. Comprueba que el nuevo deployment usa
+   ese nuevo commit; volver a desplegar el commit antiguo repite el mismo error.
+
+El nombre **`Puzzle.tsx`** lleva P mayúscula. En Vercel las mayúsculas y minúsculas importan.
+No cambies el alias de `tsconfig.json` para ocultar este error y no uses `git push --force`.
+Si subes todo el proyecto, conserva las carpetas `src/`, `public/` y `scripts/`, sin aplanarlas.
+En Vercel la carpeta raíz del proyecto debe ser la que contiene `package.json` y `tsconfig.json`.
+
+**No ejecutes `/setup` ni reinicies la partida por este error.** No se requieren cambios de base
+de datos y se conservan las preguntas, los recorridos y el progreso.
+
+---
+
 ## 4 · Preparar la base de datos (el paso importante)
 
 Hay **dos formas de hacerlo**. Elige la que te resulte más cómoda; las dos hacen lo mismo.
