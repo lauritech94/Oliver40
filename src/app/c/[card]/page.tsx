@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Puzzle from "@/components/Puzzle";
+import CardMinigame from "@/components/CardMinigame";
+import type { CardMinigame as CardMinigameData } from "@/lib/types";
 
 type PuzzleData = { image: string; size: number; word: string };
 
@@ -20,6 +22,7 @@ type TaskView = {
   requiresJudge: boolean;
   attempts: number;
   puzzle: PuzzleData | null;
+  minigame: CardMinigameData | null;
   memorize: { seconds: number } | null;
 };
 
@@ -106,6 +109,28 @@ export default function CardPage() {
     await send(answer.trim());
   }
 
+  const completeMinigame = useCallback(async (): Promise<boolean> => {
+    setBusy(true);
+    setRequestError("");
+    try {
+      const response = await fetch(`/api/cards/${card}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete-minigame" }),
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.correct) {
+        throw new Error(json?.error ?? "No se pudo guardar el minijuego.");
+      }
+      setSuccess({ nextCard: json.nextCard ?? null, finished: Boolean(json.finished) });
+      return true;
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : "No se pudo contactar con el servidor.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [card]);
 
   if (!data) return <Shell>Cargando tarjeta #{card}…</Shell>;
 
@@ -257,6 +282,10 @@ export default function CardPage() {
           />
         )}
 
+        {task.minigame && (
+          <CardMinigame key={task.id} game={task.minigame} onComplete={completeMinigame} />
+        )}
+
         {task.memorize && (
           <Memorize
             card={card}
@@ -283,7 +312,7 @@ export default function CardPage() {
           </div>
         )}
 
-        {!isMemorizing && (!task.puzzle || wrong || pending) && (
+        {!isMemorizing && !task.minigame && (!task.puzzle || wrong || pending) && (
           <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
             <input
               value={answer}

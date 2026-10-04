@@ -1,6 +1,6 @@
 import { hashString, mulberry32, pick, randInt, sample, shuffle } from "./rand";
 import type { Draft } from "./types";
-import { FORMULA_WORDS, MEMORY_NOUNS, SOPA_THEMES } from "./content/words";
+import { FORMULA_WORDS, SOPA_THEMES } from "./content/words";
 import { COUNTRIES, type Compound, type CompoundPart } from "./content/static";
 import nonogramItems from "./content/nonograms.json";
 
@@ -370,58 +370,15 @@ export function genSearch(spot: SearchSpot, slot: number): Draft {
   };
 }
 
-/* ───────────── 13 · MEMORIA ───────────── */
-const MEM_COLORS: readonly (readonly [string, string])[] = [
-  ["ROJO", "r"], ["AZUL", "a"], ["VERDE", "v"], ["NEGRO", "n"],
-  ["BLANCO", "b"], ["MORADO", "m"], ["GRIS", "g"], ["DORADO", "d"],
-];
-const MEM_EMOJIS = ["🍎", "⭐", "🐟", "🎈", "🚗", "🌵"];
-
+/* ───────────── 13 · MEMORIA NUMÉRICA (todos 5 segundos) ───────────── */
 export function genMemory(): Draft {
-  const kind = randInt(0, 3);
-  if (kind === 0) {
-    const seq = Array.from({ length: randInt(5, 6) }, () => pick(MEM_COLORS));
-    return {
-      title: "Memoria: colores",
-      prompt: "Pulsa «Mostrar»: verás una serie de colores unos segundos y después desaparecerá.\n\nEscribe la INICIAL de cada color, en orden y todo junto.\nEjemplo: ROJO · AZUL → ra",
-      answer: seq.map((c) => c[1]).join(""),
-      hint: "Repite la serie en voz baja mientras la miras.",
-      meta: { memorize: { text: seq.map((c) => c[0]).join(" · "), seconds: 7 } },
-    };
-  }
-  if (kind === 1) {
-    const digits = Array.from({ length: 7 }, () => randInt(0, 9));
-    const reversed = Math.random() < 0.5;
-    return {
-      title: "Memoria: número",
-      prompt: `Pulsa «Mostrar»: verás un número de 7 cifras unos segundos y después desaparecerá.\n\nEscríbelo ${reversed ? "AL REVÉS" : "tal cual"}, sin espacios.`,
-      answer: (reversed ? [...digits].reverse() : digits).join(""),
-      hint: "Agrupa las cifras de dos en dos.",
-      meta: { memorize: { text: digits.join(" "), seconds: 6 } },
-    };
-  }
-  if (kind === 2) {
-    const words = sample(MEMORY_NOUNS, 6);
-    const index = randInt(1, 4);
-    const ordinals = ["1.ª", "2.ª", "3.ª", "4.ª", "5.ª", "6.ª"];
-    return {
-      title: "Memoria: palabras",
-      prompt: `Pulsa «Mostrar»: verás 6 palabras unos segundos y después desaparecerán.\n\n¿Cuál era la ${ordinals[index]} palabra?`,
-      answer: words[index],
-      hint: "Inventa una historia que una las palabras.",
-      meta: { memorize: { text: words.join(" · "), seconds: 9 } },
-    };
-  }
-  const chosen = sample(MEM_EMOJIS, 3);
-  const counts = sample([2, 3, 4, 5, 6], 3);
-  const list = shuffle(chosen.flatMap((e, i) => Array<string>(counts[i]).fill(e)));
-  const target = randInt(0, 2);
+  const digits = Array.from({ length: 7 }, () => randInt(0, 9));
   return {
-    title: "Memoria: recuento",
-    prompt: `Pulsa «Mostrar»: verás un montón de emojis unos segundos y después desaparecerán.\n\n¿Cuántos ${chosen[target]} había? (solo el número)`,
-    answer: String(counts[target]),
-    hint: "Céntrate solo en ese emoji.",
-    meta: { memorize: { text: list.join(" "), seconds: 8 } },
+    title: "Memoria numérica",
+    prompt:
+      "Pulsa «Mostrar»: verás un número de 7 cifras durante exactamente 5 segundos. Después desaparecerá y se desbloqueará el cajetín.\n\nEscríbelo en el mismo orden, sin espacios.",
+    answer: digits.join(""),
+    meta: { memorize: { text: digits.join(" "), seconds: 5 } },
   };
 }
 
@@ -457,7 +414,7 @@ export function compoundDraft(c: Compound): Draft {
   steps.push(`${c.parts.length + 1}) Junta todo, en ese orden.`);
   return {
     title: "Fórmula de palabras",
-    prompt: `Sigue los pasos para formar una palabra (sin tildes):\n\n${steps.join("\n")}\n\nPista: es ${c.cat}. Escribe la palabra resultante.`,
+    prompt: `Sigue los pasos para formar una palabra (sin tildes):\n\n${steps.join("\n")}\n\nEscribe la palabra resultante.`, 
     answer: c.parts.map(partValue).join("").toLowerCase(),
     hint: `Es ${c.cat}. Ve apuntando cada trozo en un papel.`,
   };

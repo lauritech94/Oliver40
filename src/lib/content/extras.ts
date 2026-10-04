@@ -1,35 +1,119 @@
 import type { Draft, PlayerInfo } from "../types";
 
-/* ───────────── Sustituto de INTERACCIÓN SOCIAL · PREGUNTAS TRAMPA ───────────── */
-export const TRAMPAS: readonly { q: string; a: string; h: string }[] = [
-  { q: "¿Qué pesa más, un kilo de plomo o un kilo de plumas?", a: "lo mismo|pesan lo mismo|el mismo peso|son iguales", h: "Un kilo es un kilo." },
-  { q: "¿Cuántos meses del año tienen 28 días?", a: "12|todos|doce|todos los meses", h: "Todos los meses los tienen." },
-  { q: "Un granjero tiene 17 ovejas y se le mueren todas menos 9. ¿Cuántas le quedan?", a: "9|nueve", h: "«Se mueren todas MENOS 9»." },
-  { q: "Si un avión se estrella justo en la frontera entre dos países, ¿dónde entierran a los supervivientes?", a: "en ningun lado|no se entierran|a ningun lado|no los entierran|ninguna parte", h: "Los supervivientes están vivos." },
-  { q: "¿Cuánta tierra hay en un agujero de dos metros de profundidad?", a: "ninguna|0|cero|no hay", h: "Un agujero está vacío por definición." },
-  { q: "¿Qué hora es cuando un reloj da las trece?", a: "la una|una|es la una", h: "Después de las doce, ¿qué viene?" },
-  { q: "Si un tren eléctrico va hacia el norte, ¿hacia dónde sale el humo?", a: "no sale humo|no tiene humo|a ningun lado|ningun lado|no echa humo", h: "Es un tren ELÉCTRICO." },
-  { q: "¿Cuántas veces puedes restar 5 de 25?", a: "1|una|una vez", h: "La primera vez ya no es 25." },
-  { q: "¿Qué tiene dientes y no muerde?", a: "un peine|peine|el peine|una sierra|sierra", h: "Lo usas por la mañana." },
-  { q: "¿Qué se ve en medio de la palabra «MAR»?", a: "la letra a|una a|la a|letra a", h: "Mira la letra de en medio." },
-  { q: "¿Qué se rompe solo con nombrarlo?", a: "el silencio|silencio", h: "Si lo dices, desaparece." },
-  { q: "¿Cuántos animales metió Moisés en el arca?", a: "ninguno|0|cero|no metio ninguno", h: "No fue Moisés quien construyó el arca." },
-  { q: "¿Qué es lo que cuanto más se seca, más moja?", a: "una toalla|la toalla|toalla", h: "Está en el baño." },
-  { q: "¿Qué va subiendo y bajando sin moverse de sitio?", a: "una escalera|la escalera|escalera", h: "Está en las casas de dos plantas." },
-  { q: "¿Qué palabra se escribe mal en todos los diccionarios?", a: "mal|la palabra mal", h: "La respuesta está en la propia pregunta." },
-  { q: "Si tienes seis manzanas y le quitas cuatro, ¿cuántas tienes?", a: "4|cuatro", h: "«Tienes» las que acabas de tomar." },
-  { q: "¿Qué es lo que anda sin pies?", a: "el humo|humo|la sombra|una sombra|el viento|viento", h: "Lo ves cuando encienden algo." },
-  { q: "¿Qué le dice un semáforo a otro?", a: "no me mires que me cambio|no me mires", h: "Se cambia de color." },
-  { q: "¿Cuántas letras tiene el abecedario?", a: "27|veintisiete", h: "Incluye la eñe." },
-  { q: "¿Qué país tiene forma de sombrero?", a: "chile", h: "Está en Sudamérica." },
-  { q: "¿Qué entra en la cocina y sale en el baño sin moverse?", a: "la pared|una pared|pared", h: "Separa las estancias." },
-  { q: "¿Qué se seca al mojarse?", a: "una toalla|la toalla|toalla", h: "Absorbe el agua." },
-  { q: "Un cocodrilo cruza un río. ¿Qué le pasa?", a: "se moja|se moja nadando|se moja el", h: "Está nadando." },
-  { q: "Si lanzas una piedra negra al Mar Rojo, ¿qué pasa?", a: "se moja|se hunde|la piedra se moja|nada pasa|se hunde la piedra", h: "El agua está húmeda." },
-  { q: "¿Qué es lo que no está en su sitio y todo el mundo lo usa?", a: "la boca|la boca de un rinoceronte|el punto", h: "Está en la cara." },
-  { q: "¿Qué pica sin ser animal?", a: "una ortiga|la ortiga|ortiga|un alfiler|alfiler", h: "Crece en el campo." },
-  { q: "Si ayer fuera mañana, hoy sería viernes. ¿Qué día es hoy realmente?", a: "domingo|el domingo|dia domingo", h: "Piensa hacia atrás." },
-  { q: "¿Qué es lo que lo da el dueño y lo usa el que no lo tiene?", a: "el anillo|un anillo|anillo", h: "Se lleva en el dedo." },
+/* ───────────── PREGUNTAS TRAMPA · 28 diferentes y fáciles ───────────── */
+export const TRAMPAS: readonly { q: string; a: string }[] = [
+  {
+    q: "¿Qué pesa más: un kilo de plomo o un kilo de plumas?",
+    a: "pesan lo mismo|lo mismo|pesan igual|igual|un kilo",
+  },
+  {
+    q: "¿Cuántos meses del año tienen 28 días?",
+    a: "12|doce|todos|todos los meses",
+  },
+  {
+    q: "Un granjero tiene 17 ovejas. Se le mueren todas menos 9. ¿Cuántas le quedan?",
+    a: "9|nueve",
+  },
+  {
+    q: "Un avión se estrella en la frontera entre España y Francia. ¿Dónde entierran a los supervivientes?",
+    a: "no se entierran|no los entierran|en ninguna parte|en ningun sitio|en ningun lado|a los supervivientes no se les entierra",
+  },
+  {
+    q: "Un tren eléctrico va hacia el norte. ¿Hacia dónde sale el humo?",
+    a: "no sale humo|no echa humo|no hay humo|a ningun lado|ningun lado",
+  },
+  {
+    q: "¿Cuánta tierra hay dentro de un agujero de dos metros de profundidad?",
+    a: "ninguna|nada|0|cero|no hay tierra|ninguna tierra",
+  },
+  {
+    q: "Tienes 6 manzanas y coges 4. ¿Cuántas manzanas tienes tú?",
+    a: "4|cuatro",
+  },
+  {
+    q: "¿Cuántos animales metió Moisés en el arca?",
+    a: "ninguno|ningun animal|0|cero|los metio noe|fue noe|no fue moises",
+  },
+  {
+    q: "Un gallo pone un huevo en lo alto de un tejado. ¿Hacia qué lado cae?",
+    a: "los gallos no ponen huevos|un gallo no pone huevos|no pone huevos|ninguno|a ningun lado|no cae",
+  },
+  {
+    q: "En una pecera hay 10 peces. Dos se ahogan. ¿Cuántos quedan?",
+    a: "10|diez|quedan 10|todos|todos los peces",
+  },
+  {
+    q: "Un médico te da 3 pastillas y te dice que tomes una cada 30 minutos. ¿En cuánto tiempo te las terminas?",
+    a: "1 hora|una hora|60 minutos|sesenta minutos",
+  },
+  {
+    q: "¿Cuántos huevos puedes comer con el estómago vacío?",
+    a: "1|uno|un huevo|solo uno|solamente uno",
+  },
+  {
+    q: "En una habitación oscura hay una vela, una lámpara y una chimenea. Solo tienes una cerilla. ¿Qué enciendes primero?",
+    a: "la cerilla|cerilla|el fosforo|fosforo|la cerilla primero",
+  },
+  {
+    q: "¿Qué te pertenece, pero los demás lo usan más que tú?",
+    a: "mi nombre|tu nombre|el nombre|nombre|mi propio nombre",
+  },
+  {
+    q: "¿Qué cosa sube todos los años y nunca baja?",
+    a: "la edad|edad|mi edad|tu edad",
+  },
+  {
+    q: "¿Qué se moja mientras seca?",
+    a: "la toalla|una toalla|toalla",
+  },
+  {
+    q: "¿Qué tiene muchos dientes pero no puede morder?",
+    a: "el peine|un peine|peine",
+  },
+  {
+    q: "¿Qué tiene dos manos pero no tiene brazos?",
+    a: "el reloj|un reloj|reloj",
+  },
+  {
+    q: "¿Qué tiene muchas teclas pero no abre ninguna puerta?",
+    a: "el piano|un piano|piano|el teclado|un teclado|teclado",
+  },
+  {
+    q: "¿Qué puede llenar una habitación sin ocupar espacio?",
+    a: "la luz|luz|el aire|aire",
+  },
+  {
+    q: "¿Qué puedes coger pero no puedes lanzar?",
+    a: "un resfriado|el resfriado|resfriado|un catarro|catarro|la gripe|gripe",
+  },
+  {
+    q: "¿Con qué mano es mejor remover el café?",
+    a: "con ninguna|ninguna|con una cuchara|la cuchara|una cuchara|cuchara",
+  },
+  {
+    q: "En una carrera adelantas a la persona que va segunda. ¿En qué posición te colocas?",
+    a: "segundo|segunda|2|segundo puesto|segunda posicion|en segunda posicion",
+  },
+  {
+    q: "Antes de que se descubriera el monte Everest, ¿cuál era la montaña más alta del mundo?",
+    a: "el everest|everest|monte everest|el monte everest",
+  },
+  {
+    q: "Dos padres y dos hijos comen una manzana cada uno, pero solo comen 3 manzanas. ¿Cómo puede ser?",
+    a: "son tres personas|3 personas|tres personas|abuelo padre e hijo|un abuelo un padre y un hijo|abuelo padre hijo",
+  },
+  {
+    q: "Una familia tiene 2 padres, 6 hijos y todos los hijos comparten una única hermana. ¿Cuántas personas hay?",
+    a: "9|nueve|9 personas|nueve personas",
+  },
+  {
+    q: "¿De qué color es el caballo blanco de Santiago?",
+    a: "blanco|de color blanco|es blanco",
+  },
+  {
+    q: "¿Qué letra está al final de la palabra «todo»?",
+    a: "o|la o|letra o|la letra o",
+  },
 ];
 
 /* ───────────── Sustituto de NONOGRAMA · PUZZLE 8×8 ───────────── */
@@ -38,7 +122,7 @@ export const PUZZLE_IMAGES = [
   "/images/puzzle/pescador.jpg",
 ] as const;
 
-export const PUZZLE_SIZE = 8;
+export const PUZZLE_SIZE = 6;
 
 /** Palabras que aparecen al completar el puzzle (una por jugador). */
 export const PUZZLE_WORDS: readonly string[] = [
@@ -114,7 +198,6 @@ export function trampaDrafts(count: number): Draft[] {
       title: "Pregunta trampa",
       prompt: `Pregunta trampa: piensa antes de responder, la respuesta obvia suele ser la mala.\n\n«${r.q}»`,
       answer: r.a,
-      hint: r.h,
     });
   }
   return out;
@@ -125,9 +208,9 @@ export function puzzleDrafts(players: PlayerInfo[]): Draft[] {
     const index = (player.slot - 1) % PUZZLE_IMAGES.length;
     const word = PUZZLE_WORDS[(player.slot - 1) % PUZZLE_WORDS.length];
     return {
-      title: "Puzzle 8×8",
+      title: "Puzzle 6×6",
       prompt:
-        "Ordena el puzzle: toca dos casillas para intercambiarlas hasta reconstruir la foto.\n\nEncima tienes una miniatura de referencia. Al completarlo aparecerá una palabra que deberás enviar.",
+        "Ordena el puzzle de 36 piezas: toca dos casillas para intercambiarlas hasta reconstruir la foto.\n\nEncima tienes una imagen de referencia. Al completarlo se validará automáticamente.",
       answer: word,
       hint: "Empieza por las esquinas y los bordes: son lo más fácil de reconocer.",
       meta: { puzzle: { image: PUZZLE_IMAGES[index], size: PUZZLE_SIZE, word } },

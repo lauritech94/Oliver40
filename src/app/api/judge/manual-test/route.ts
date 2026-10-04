@@ -50,6 +50,7 @@ export async function GET() {
                   word: `manual-puzzle-${task.id}`,
                 }
               : null,
+            minigame: task.meta.minigame ?? null,
             memory: task.meta.memorize
               ? { text: task.meta.memorize.text, seconds: task.meta.memorize.seconds }
               : null,
@@ -93,6 +94,10 @@ export async function POST(request: Request) {
     }
     if (body?.action === "complete-puzzle") {
       if (!task.meta.puzzle) return Response.json({ error: "Esta prueba no es un puzzle." }, { status: 400 });
+      return Response.json({ ok: true, correct: true, expected });
+    }
+    if (body?.action === "complete-minigame") {
+      if (!task.meta.minigame) return Response.json({ error: "Esta prueba no es un minijuego." }, { status: 400 });
       return Response.json({ ok: true, correct: true, expected });
     }
     if (body?.action === "judge-pass") {

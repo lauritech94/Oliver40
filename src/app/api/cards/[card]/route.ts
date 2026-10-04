@@ -87,6 +87,14 @@ export async function POST(request: Request, ctx: { params: Promise<{ card: stri
     return Response.json({ text: memo.text, seconds: memo.seconds });
   }
 
+  if (body.action === "complete-minigame") {
+    if (!task.meta?.minigame) {
+      return Response.json({ error: "Esta prueba no es un minijuego." }, { status: 400 });
+    }
+    const result = await markTaskSolved(task, false);
+    return Response.json({ correct: true, ...result });
+  }
+
   const answer = (body.answer ?? "").trim();
   const expected = await resolveExpected(task);
   if (!expected) {
@@ -125,6 +133,7 @@ function publicTask(task: Task) {
     puzzle: task.meta?.puzzle
       ? { ...task.meta.puzzle, image: `/api/puzzle-image/${task.id}`, word: task.answer.split("|")[0] }
       : null,
+    minigame: task.meta?.minigame ?? null,
     memorize: task.meta?.memorize ? { seconds: task.meta.memorize.seconds } : null,
   };
 }

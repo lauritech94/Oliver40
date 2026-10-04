@@ -41,6 +41,8 @@ export async function ensureFixedGame(): Promise<Game> {
 
     // Ediciones y fotos subidas que hay que CONSERVAR si el plan cambia de versión.
     const preserved = new Map<string, PreservedTask>();
+    let refreshTrapQuestionsInPlace = false;
+    let refreshV7InPlace = false;
 
     if (!game) {
       [game] = await tx
@@ -53,6 +55,30 @@ export async function ensureFixedGame(): Promise<Game> {
           cardPoolSize: FIXED_CARD_COUNT,
           startedAt: new Date(),
         })
+        .returning();
+    } else if (
+      ["gymkhana-28-v3", "gymkhana-28-v4", "gymkhana-28-v5", "gymkhana-28-v6"].includes(game.planVersion) &&
+      String(FIXED_PLAN_VERSION) === "gymkhana-28-v7"
+    ) {
+      // v7 cambia tres tipos por minijuegos y simplifica puzzle, cultura,
+      // memoria y ¿Quién soy? Se actualiza cada fila EN SU SITIO para conservar
+      // IDs, número NFC, paso, progreso, intentos y aperturas. Admite cualquiera
+      // de las versiones intermedias que pudo quedar desplegada en producción.
+      refreshV7InPlace = true;
+      [game] = await tx
+        .update(games)
+        .set({ planVersion: FIXED_PLAN_VERSION })
+        .where(eq(games.id, game.id))
+        .returning();
+    } else if (game.planVersion === "gymkhana-28-v5" && String(FIXED_PLAN_VERSION) === "gymkhana-28-v6") {
+      // v6 cambia únicamente el banco de preguntas trampa. Se actualizan en su
+      // misma fila para conservar IDs, tarjetas, intentos, solvedAt y progreso.
+      // Las preguntas que hayas editado en el panel NO se sobrescriben.
+      refreshTrapQuestionsInPlace = true;
+      [game] = await tx
+        .update(games)
+        .set({ planVersion: FIXED_PLAN_VERSION })
+        .where(eq(games.id, game.id))
         .returning();
     } else if (game.planVersion && game.planVersion !== FIXED_PLAN_VERSION) {
       // El plan se ha rediseñado en el código. Antes de regenerar, se guardan las
@@ -166,6 +192,99 @@ export async function ensureFixedGame(): Promise<Game> {
       .select({ total: count() })
       .from(tasks)
       .where(eq(tasks.gameId, game.id));
+
+    if (refreshTrapQuestionsInPlace && existingTasks.total === FIXED_PLAN.length) {
+      const playersBySlot = new Map(playerRows.map((player) => [player.slot, player]));
+      const trapTasks = FIXED_PLAN.filter((task) => task.typeSlug === "trampa");
+      for (const task of trapTasks) {
+        const player = playersBySlot.get(task.playerId);
+        if (!player) throw new Error(`No existe el jugador del puesto ${task.playerId}.`);
+        await tx
+          .update(tasks)
+          .set({
+            typeName: task.typeName,
+            icon: task.icon,
+            title: task.title,
+            prompt: task.prompt,
+            answer: task.answer,
+            hint: "",
+            judgeNote: task.judgeNote,
+            requiresJudge: task.requiresJudge,
+            needsSetup: task.needsSetup,
+            meta: task.meta,
+          })
+          .where(
+            and(
+              eq(tasks.gameId, game.id),
+              eq(tasks.playerId, player.id),
+              eq(tasks.cardNumber, task.cardNumber),
+              eq(tasks.edited, false),
+            ),
+          );
+      }
+    }
+
+    if (refreshV7InPlace && existingTasks.total === FIXED_PLAN.length) {
+      const currentRows = await tx.select().from(tasks).where(eq(tasks.gameId, game.id));
+      const currentByCard = new Map(currentRows.map((task) => [task.cardNumber, task]));
+      const updatedTypes = new Set([
+        "laberinto",
+        "intruso",
+        "cronometro",
+        "puzzle",
+        "cultura",
+        "memoria",
+        "quien-soy",
+      ]);
+
+      for (const fresh of FIXED_PLAN.filter((task) => updatedTypes.has(task.typeSlug))) {
+        const current = currentByCard.get(fresh.cardNumber);
+        if (!current) throw new Error(`Falta la tarjeta #${fresh.cardNumber} durante la migración v7.`);
+        const preserveText = current.edited && current.typeSlug === fresh.typeSlug;
+        let meta = fresh.meta;
+        const uploadedImage = current.meta.puzzle?.image;
+        if (fresh.typeSlug === "puzzle" && meta.puzzle && uploadedImage?.startsWith("data:image/")) {
+          meta = { ...meta, puzzle: { ...meta.puzzle, image: uploadedImage } };
+        }
+
+        await tx
+          .update(tasks)
+          .set({
+            typeSlug: fresh.typeSlug,
+            typeName: fresh.typeName,
+            icon: fresh.icon,
+            title: preserveText ? current.title : fresh.title,
+            prompt: preserveText ? current.prompt : fresh.prompt,
+            answer: preserveText ? current.answer : fresh.answer,
+            hint: "",
+            judgeNote: preserveText ? current.judgeNote : fresh.judgeNote,
+            requiresJudge: fresh.requiresJudge,
+            needsSetup: fresh.needsSetup,
+            meta,
+            edited: preserveText,
+          })
+          .where(eq(tasks.id, current.id));
+      }
+    }
+
+    // Elimina también las antiguas «Pista: ...» incrustadas dentro de los
+    // enunciados de anagrama/fórmula. Solo se tocan pruebas no editadas.
+    if (existingTasks.total === FIXED_PLAN.length) {
+      for (const fresh of FIXED_PLAN.filter((task) =>
+        task.typeSlug === "anagrama" || task.typeSlug === "formula-palabras",
+      )) {
+        await tx
+          .update(tasks)
+          .set({ prompt: fresh.prompt })
+          .where(
+            and(
+              eq(tasks.gameId, game.id),
+              eq(tasks.cardNumber, fresh.cardNumber),
+              eq(tasks.edited, false),
+            ),
+          );
+      }
+    }
 
     if (existingTasks.total === 0) {
       const playersBySlot = new Map(playerRows.map((player) => [player.slot, player]));

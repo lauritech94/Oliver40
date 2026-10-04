@@ -285,9 +285,8 @@ Ahí tienes todo lo que hay que preparar:
 | **420 tarjetas** | Para recortar. Tamaño carta (6,3 × 8,6 cm), 9 por hoja. Solo dicen «TARJETA 01». |
 | **Mapa de tarjetas** | Qué número pertenece a quién. **Solo para jueces.** |
 | **Palabras secretas** | Las 28 palabras de las pruebas de foto. **Solo para jueces.** |
-| **Interacción social** | La pregunta de tu encuesta y su respuesta. **Solo para jueces.** |
-| **Código maestro** | Una hoja para pegar dentro de la puerta de la nevera. |
-| **Búsqueda del objeto** | Hojas con códigos por jugador para esconder. |
+| **Código maestro** | Una hoja para esconder dentro de un libro. |
+| **Misterio helado** | Una tabla de palabras/números para pegar dentro de la nevera. |
 
 ### Grabar las etiquetas NFC
 
@@ -389,7 +388,6 @@ prueba o buscar por texto. Al desplegar una prueba puedes editar:
 | **Título** | El nombre corto que se ve en el tablero del jugador |
 | **Pregunta** | El enunciado completo que lee el jugador |
 | **Respuesta** | La solución. Acepta variantes separadas por `\|` (p. ej. `titanic\|el titanic`) |
-| **Pista** | Lo que aparece si el jugador pulsa «Pedir pista» |
 | **Nota para jueces** | Texto que solo se ve en el panel, nunca en el móvil del jugador |
 
 Al pulsar **Guardar** se aplica al momento. Las pruebas que hayas tocado se marcan con la
@@ -399,9 +397,8 @@ devuelve una prueba al texto del plan inicial.
 > 🔒 Editar un texto **no cambia los números de tarjeta ni los recorridos**: lo que ya hayas
 > impreso sigue siendo válido.
 
-**Las pruebas de interacción social** se editan igual que el resto: escribes la pregunta (por
-ejemplo la de tu encuesta) y su respuesta. El enunciado original menciona a otro jugador:
-sustitúyelo por tu pregunta.
+Los minijuegos (laberinto, intruso y cronómetro) permiten editar título y enunciado, pero la
+mecánica interactiva se define en el código. Ninguna prueba tiene campo de pista.
 
 ### Editarlo en el código (alternativa)
 
@@ -410,11 +407,11 @@ de qué archivo viene. El mapa rápido:
 
 | Archivo | Qué contiene |
 | ------- | ------------ |
-| `src/lib/content/static.ts` | Acertijos, emojis, retos de foto, cultura, ¿quién soy?, fórmulas de palabras |
-| `src/lib/content/words.ts` | Palabras de anagramas, del código escondido y las secretas de foto |
-| `src/lib/content/nonograms.json` | Las rejillas 5×5 |
-| `src/lib/content/profile.ts` | Los datos que se preguntan en la prueba social |
-| `src/lib/generators.ts` | Lógica, series, sopas de letras, memoria, búsquedas (se generan con números al azar y luego se congelan) |
+| `src/lib/content/card-minigames.ts` | Laberinto, intruso, cronómetro, cultura fácil y ¿Quién soy? obvio |
+| `src/lib/content/static.ts` | Emojis, retos de foto y fórmulas de palabras |
+| `src/lib/content/words.ts` | Palabras de anagramas, código escondido y palabras secretas de foto |
+| `src/lib/content/extras.ts` | Puzzle 6×6 y misterio helado |
+| `src/lib/generators.ts` | Series, sopa de letras y memoria numérica de 5 segundos |
 
 ⚠️ Si cambias el código **no** pulses nada que regenere la partida: las 420 pruebas ya están
 guardadas en tu base de datos y son las que valen. Cambiar el código solo afectaría a una
@@ -501,6 +498,20 @@ simula una actualización de versión y verifica que todo sigue ahí.
 
 ---
 
+## 🎮 Tres pruebas convertidas en minijuegos
+
+- **Laberinto 15×15:** una ruta distinta por persona, controles de flecha, teclado o deslizamiento.
+- **Encuentra el intruso:** 3 cuadrículas de 64 símbolos; hay que tocar el diferente.
+- **Cronómetro exacto:** 3 intentos con el reloj oculto para acercarse a 4, 5 o 6 segundos.
+
+Sustituyen a acertijo, pregunta trampa y lógica sin cambiar los números NFC ni la posición de
+las otras pruebas. La migración v7 actualiza cada fila en el mismo sitio y conserva progreso,
+intentos, aperturas, ediciones de los tipos que siguen existiendo y la foto subida del puzzle.
+
+Además: puzzle 6×6, cultura sencilla, ¿Quién soy? obvio y memoria numérica de 5 segundos.
+
+---
+
 ## 🚫 Sin pistas: dificultad máxima
 
 Ninguna prueba de la gymkhana lleva pista. No hay botón de ayuda, ni texto que asista, ni
@@ -520,8 +531,8 @@ pistas en el plan, en la app del jugador, en la API o en el editor.
 1. Deja el **QR impreso** en la mesa de salida.
 2. Reparte las tarjetas por el espacio (el mapa de jueces dice cuál es de quién, pero las
    tarjetas no lo indican).
-3. Esconde el **código maestro** (nevera) y las **hojas de búsqueda**.
-4. Los jueces llevan impresas las **palabras secretas** y la hoja de **interacción social**.
+3. Esconde el **código maestro** dentro de un libro y la hoja del **misterio helado** dentro de la nevera.
+4. Los jueces llevan impresas las **palabras secretas** de las pruebas de foto.
 5. Cada persona escanea el QR, elige su nombre y empieza.
 
 Desde `/judge` sigues en tiempo real quién va por dónde y puedes validar a mano una prueba
@@ -533,21 +544,21 @@ Desde `/judge` sigues en tiempo real quién va por dónde y puedes validar a man
 
 | # | Tipo | Validación |
 |---|------|-----------|
-| 01 | 🧩 Acertijo | Automática |
-| 02 | 🪤 Pregunta trampa | Automática |
+| 01 | 🌀 Laberinto 15×15 | Minijuego automático |
+| 02 | 👀 Encuentra el intruso (3 rondas) | Minijuego automático |
 | 03 | 🔤 Anagrama | Automática |
 | 04 | 😱 Jeroglífico de emojis | Automática |
-| 05 | 🧠 Lógica | Automática |
+| 05 | ⏱️ Cronómetro exacto (3 intentos) | Minijuego automático |
 | 06 | 🗝️ Código escondido | Automática |
-| 07 | 🧩 Puzzle 8×8 (interactivo) | Automática |
+| 07 | 🧩 Puzzle 6×6 (36 piezas) | Automática |
 | 08 | 📸 Foto | 🔑 Palabra del juez |
 | 09 | 🔍 Sopa de letras | Automática |
 | 10 | 🔢 Serie numérica | Automática |
 | 11 | 🔡 Fórmula de palabras | Automática |
-| 12 | 🌍 Cultura general | Automática |
-| 13 | 💭 Memoria | Automática |
-| 14 | 🧊 El código de la nevera | Automática |
-| 15 | 🕵️ ¿Quién soy? | Automática |
+| 12 | 🌍 Cultura general fácil | Automática |
+| 13 | 💭 Memoria numérica (5 segundos) | Automática |
+| 14 | 🧊 El misterio helado | Automática |
+| 15 | 🕵️ ¿Quién soy? fácil | Automática |
 
 ---
 
@@ -572,9 +583,8 @@ npm run dev              # http://localhost:3000
 
 ## ⚠️ Cosas que conviene saber
 
-- **El plan es fijo.** Vive en `src/lib/fixed-plan.ts` con la versión `gymkhana-28-v2`. Si
-  alguna vez cambias esa versión, la app se negará a arrancar sobre una base de datos con el
-  plan antiguo, para no invalidar las tarjetas ya impresas.
+- **El plan es fijo.** Vive en `src/lib/fixed-plan.ts` con la versión `gymkhana-28-v7`.
+  El mapa `src/lib/fixed-layout.ts` congela los 420 números y sus 15 posiciones por persona.
 - **No hay contraseñas.** El panel de jueces (`/judge`) es accesible para cualquiera que
   conozca la dirección, y ahí se ven todas las respuestas. No compartas esa URL con los
   jugadores.

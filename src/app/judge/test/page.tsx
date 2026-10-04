@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Puzzle from "@/components/Puzzle";
+import CardMinigame from "@/components/CardMinigame";
+import type { CardMinigame as CardMinigameData } from "@/lib/types";
 
 type Difficulty = "facil" | "media" | "dificil";
 type Status = "pending" | "correct" | "revealed" | "judge";
@@ -25,6 +27,7 @@ type TestTask = {
   prompt: string;
   requiresJudge: boolean;
   puzzle: { image: string; size: number; word: string } | null;
+  minigame: CardMinigameData | null;
   memory: { text: string; seconds: number } | null;
 };
 
@@ -102,7 +105,7 @@ export default function JudgeManualTestPage() {
   }
 
   const check = useCallback(
-    async (payload: { answer?: string; action?: "reveal" | "complete-puzzle" | "judge-pass" }): Promise<boolean> => {
+    async (payload: { answer?: string; action?: "reveal" | "complete-puzzle" | "complete-minigame" | "judge-pass" }): Promise<boolean> => {
       if (!task || busy) return false;
       setBusy(true);
       setError("");
@@ -295,7 +298,15 @@ export default function JudgeManualTestPage() {
           />
         )}
 
-        {!task.puzzle && !task.requiresJudge && !passed && !memoryVisible && (
+        {task.minigame && !passed && (
+          <CardMinigame
+            key={task.id}
+            game={task.minigame}
+            onComplete={() => check({ action: "complete-minigame" })}
+          />
+        )}
+
+        {!task.puzzle && !task.minigame && !task.requiresJudge && !passed && !memoryVisible && (
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -330,7 +341,7 @@ export default function JudgeManualTestPage() {
 
         {error && <p role="alert" className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
 
-        {!passed && !task.puzzle && (
+        {!passed && !task.puzzle && !task.minigame && (
           <button onClick={() => void check({ action: "reveal" })} disabled={busy} className="mt-4 w-full text-xs text-slate-500 underline-offset-4 hover:text-amber-300 hover:underline">
             Ver respuesta y pasar a valorarla
           </button>

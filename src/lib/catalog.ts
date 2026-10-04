@@ -1,22 +1,20 @@
 import { shuffle } from "./rand";
 import type { Draft, PlayerInfo } from "./types";
 import { ANAGRAMS, CODE_WORDS, SECRET_WORDS } from "./content/words";
+import { COMPOUNDS, EMOJI_PUZZLES, FOTOS } from "./content/static";
+import { fridgeDrafts, puzzleDrafts } from "./content/extras";
 import {
-  ACERTIJOS,
-  COMPOUNDS,
-  CULTURA,
-  EMOJI_PUZZLES,
-  FOTOS,
-  QUIEN_SOY,
-} from "./content/static";
-import { fridgeDrafts, puzzleDrafts, trampaDrafts } from "./content/extras";
+  EASY_CULTURE,
+  OBVIOUS_CHARACTERS,
+  intruderDrafts,
+  mazeDrafts,
+  stopwatchDrafts,
+} from "./content/card-minigames";
 import {
   CODE_KEYS,
   compoundDraft,
-  genCapital,
   genCode,
   genFormulaOps,
-  genLogic,
   genMemory,
   genSeries,
   genSopa,
@@ -85,31 +83,26 @@ function mixed(n: number, statics: Draft[], gen: () => Draft, ratio: number): Dr
 
 export const CHALLENGE_TYPES: ChallengeType[] = [
   {
-    slug: "acertijo",
-    name: "Acertijo",
-    icon: "🧩",
-    summary: "Adivinanza clásica de ingenio. Se resuelve pensando y se escribe la respuesta en la app.",
+    slug: "laberinto",
+    name: "Laberinto",
+    icon: "🌀",
+    summary:
+      "Minijuego de habilidad: mueve la ficha por un laberinto complicado de 15×15 hasta llegar a la bandera.",
     requiresJudge: false,
-    material: "Nada",
-    pool: `${ACERTIJOS.length} acertijos distintos`,
-    build: (players) =>
-      deal(ACERTIJOS, players.length).map((r) => ({
-        title: "Acertijo",
-        prompt: `Resuelve el acertijo y escribe la respuesta:\n\n«${r.q}»`,
-        answer: r.a,
-        hint: r.h,
-      })),
+    material: "Móvil",
+    pool: "Un laberinto distinto por jugador",
+    build: mazeDrafts,
   },
   {
-    slug: "trampa",
-    name: "Pregunta trampa",
-    icon: "🪤",
+    slug: "intruso",
+    name: "Encuentra el intruso",
+    icon: "👀",
     summary:
-      "Preguntas aparentemente fáciles cuya respuesta obvia es la mala. Hay que pensar antes de contestar.",
+      "Minijuego visual de 3 rondas: encuentra el símbolo diferente entre 64 casi iguales.",
     requiresJudge: false,
-    material: "Nada",
-    pool: "28 preguntas trampa",
-    build: (players) => trampaDrafts(players.length),
+    material: "Móvil",
+    pool: "3 cuadrículas distintas por jugador",
+    build: intruderDrafts,
   },
   {
     slug: "anagrama",
@@ -122,7 +115,7 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
     build: (players) =>
       deal(ANAGRAMS, players.length).map(([word, cat]) => ({
         title: "Anagrama",
-        prompt: `Ordena estas letras y forma una palabra.\nPista: ${cat} (${word.length} letras)\n\n${scramble(word)}`,
+        prompt: `Ordena estas ${word.length} letras y forma una palabra:\n\n${scramble(word)}`,
         answer: word,
         hint: `Empieza por la letra ${word[0].toUpperCase()}.`,
       })),
@@ -144,14 +137,15 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
       })),
   },
   {
-    slug: "logica",
-    name: "Lógica",
-    icon: "🧠",
-    summary: "Problemas de lógica y mates con números aleatorios: cada jugador tiene valores distintos.",
+    slug: "cronometro",
+    name: "Cronómetro exacto",
+    icon: "⏱️",
+    summary:
+      "Minijuego de pulso: para un cronómetro oculto lo más cerca posible del tiempo objetivo en 3 intentos.",
     requiresJudge: false,
-    material: "Papel y boli (opcional)",
-    pool: "8 tipos de problema con números aleatorios",
-    build: (players) => uniq(players.length, genLogic),
+    material: "Móvil",
+    pool: "Objetivos de 4, 5 o 6 segundos",
+    build: stopwatchDrafts,
   },
   {
     slug: "codigo-escondido",
@@ -170,13 +164,13 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
   },
   {
     slug: "puzzle",
-    name: "Puzzle 8×8",
+    name: "Puzzle 6×6",
     icon: "🧩",
     summary:
-      "Una foto partida en 64 casillas desordenadas. Toca dos casillas para intercambiarlas y reconstruir la imagen. Al completarla aparece una palabra.",
+      "Una foto partida en 36 piezas desordenadas. Toca dos casillas para intercambiarlas y reconstruirla, sin ayudas automáticas.",
     requiresJudge: false,
     material: "Nada (se resuelve en el móvil)",
-    pool: "4 fotos · 64 casillas por jugador",
+    pool: "36 piezas por jugador",
     build: (players) => puzzleDrafts(players),
   },
   {
@@ -233,34 +227,29 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
   },
   {
     slug: "cultura",
-    name: "Cultura general",
+    name: "Cultura general fácil",
     icon: "🌍",
-    summary: "Preguntas de cultura general, refranes por completar y capitales del mundo. Sin móvil, claro.",
+    summary:
+      "Preguntas muy conocidas de geografía, animales, cine, deporte o música. No requieren buscar datos específicos.",
     requiresJudge: false,
     material: "Nada",
-    pool: `${CULTURA.length} preguntas y refranes + capitales`,
+    pool: "28 preguntas sencillas, una diferente por jugador",
     build: (players) =>
-      mixed(
-        players.length,
-        CULTURA.map((r) => ({
-          title: `Cultura: ${r.cat}`,
-          prompt: r.q,
-          answer: r.a,
-          hint: r.h,
-        })),
-        genCapital,
-        0.65,
-      ),
+      deal(EASY_CULTURE, players.length).map((item) => ({
+        title: `Cultura: ${item.category}`,
+        prompt: item.question,
+        answer: item.answer,
+      })),
   },
   {
     slug: "memoria",
-    name: "Memoria",
+    name: "Memoria numérica",
     icon: "💭",
     summary:
-      "Se muestra una serie (colores, cifras, palabras, emojis) solo unos segundos y luego desaparece. Hay que responder de memoria. Cada vez que se vuelve a mirar queda registrado.",
+      "Se muestra un número de 7 cifras durante 5 segundos. Después desaparece y hay que escribirlo en el mismo orden.",
     requiresJudge: false,
     material: "Móvil",
-    pool: "4 mecánicas con contenido aleatorio",
+    pool: "Número distinto por jugador · 5 segundos",
     build: (players) => uniq(players.length, genMemory),
   },
   {
@@ -276,19 +265,18 @@ export const CHALLENGE_TYPES: ChallengeType[] = [
   },
   {
     slug: "quien-soy",
-    name: "¿Quién soy?",
+    name: "¿Quién soy? fácil",
     icon: "🕵️",
     summary:
-      "Adivinar un personaje famoso. Se muestra una primera pista difícil; si te atascas, pides las otras dos (queda registrado).",
+      "Adivina un personaje muy conocido con tres pistas claras y obvias visibles desde el principio.",
     requiresJudge: false,
     material: "Nada",
-    pool: `${QUIEN_SOY.length} personajes`,
+    pool: "28 personajes conocidos, uno diferente por jugador",
     build: (players) =>
-      deal(QUIEN_SOY, players.length).map((r) => ({
+      deal(OBVIOUS_CHARACTERS, players.length).map((item) => ({
         title: "¿Quién soy?",
-        prompt: `Adivina el personaje.\n\nPista 1: ${r.c[0]}\n\n(Si te atascas, pide la pista extra: te dará las otras dos.)`,
-        answer: r.a,
-        hint: `Pista 2: ${r.c[1]}\nPista 3: ${r.c[2]}`,
+        prompt: `Adivina el personaje:\n\n• ${item.clues[0]}\n• ${item.clues[1]}\n• ${item.clues[2]}`,
+        answer: item.answer,
       })),
   },
 ];

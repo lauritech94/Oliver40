@@ -13,7 +13,13 @@ assert.equal(
   0,
   `Hay ${hints.length} pruebas con pista en el plan: ${hints.slice(0, 5).map((h) => `#${h.index} "${h.hint}"`).join(", ")}`,
 );
-console.log(`✓ Plan fijo: 0 pistas en las ${FIXED_PLAN.length} pruebas.`);
+const inlineHints = FIXED_PLAN.filter((task) => /\bpista\s*:/i.test(task.prompt));
+assert.equal(
+  inlineHints.length,
+  0,
+  `Hay ${inlineHints.length} enunciados con una pista incrustada: ${inlineHints.map((task) => task.title).slice(0, 5).join(", ")}`,
+);
+console.log(`✓ Plan fijo: 0 pistas en las ${FIXED_PLAN.length} pruebas, también dentro del enunciado.`);
 
 // 2. El plan nunca puede generarse con pista aunque un generador intente devolver una.
 const gameSource = readFileSync(resolve("src/lib/game.ts"), "utf8");
