@@ -15,13 +15,32 @@ export function originalTaskFor(
   return FIXED_PLAN.find((task) => task.playerId === slot && task.stepIndex === stepIndex);
 }
 
+type PreservedTask = {
+  title: string;
+  prompt: string;
+  answer: string;
+  judgeNote: string;
+  edited: boolean;
+  typeSlug: string;
+  image: string | null;
+};
+
 /** Crea la única partida y sus 420 tareas de forma idempotente y segura ante concurrencia. */
 export async function ensureFixedGame(): Promise<Game> {
   return db.transaction(async (tx) => {
     // Una sola petición inicializa el plan aunque los 28 jugadores escaneen el QR a la vez.
     await tx.execute(sql`select pg_advisory_xact_lock(28154201)`);
 
+    // La columna que marca las ediciones de los jueces. Se crea sin borrar nada,
+    // para que funcione también en bases de datos creadas antes de esta mejora.
+    await tx.execute(
+      sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false`,
+    );
+
     let [game] = await tx.select().from(games).where(eq(games.code, FIXED_GAME_CODE)).limit(1);
+
+    // Ediciones y fotos subidas que hay que CONSERVAR si el plan cambia de versión.
+    const preserved = new Map<string, PreservedTask>();
 
     if (!game) {
       [game] = await tx
@@ -36,9 +55,40 @@ export async function ensureFixedGame(): Promise<Game> {
         })
         .returning();
     } else if (game.planVersion && game.planVersion !== FIXED_PLAN_VERSION) {
-      // El plan se ha rediseñado en el código: se vuelven a generar las pruebas.
-      // Los números de tarjeta por jugador NO cambian (el sorteo usa semilla fija),
-      // así que lo impreso sigue siendo válido; solo cambia el contenido de cada tarjeta.
+      // El plan se ha rediseñado en el código. Antes de regenerar, se guardan las
+      // ediciones de los jueces y las fotos subidas para volver a aplicarlas.
+      // Los números de tarjeta por jugador NO cambian (semilla fija), así que lo
+      // impreso sigue siendo válido; solo cambia el contenido no editado.
+      const existing = await tx
+        .select({
+          slot: players.slot,
+          stepIndex: tasks.stepIndex,
+          typeSlug: tasks.typeSlug,
+          title: tasks.title,
+          prompt: tasks.prompt,
+          answer: tasks.answer,
+          judgeNote: tasks.judgeNote,
+          edited: tasks.edited,
+          image: sql<string | null>`${tasks.meta}->'puzzle'->>'image'`,
+        })
+        .from(tasks)
+        .innerJoin(players, eq(tasks.playerId, players.id))
+        .where(eq(tasks.gameId, game.id));
+      for (const row of existing) {
+        const uploaded = row.image && row.image.startsWith("data:image/") ? row.image : null;
+        if (row.edited || uploaded) {
+          preserved.set(`${row.slot}:${row.stepIndex}`, {
+            title: row.title,
+            prompt: row.prompt,
+            answer: row.answer,
+            judgeNote: row.judgeNote,
+            edited: row.edited,
+            typeSlug: row.typeSlug,
+            image: uploaded,
+          });
+        }
+      }
+
       await tx.delete(tasks).where(eq(tasks.gameId, game.id));
       [game] = await tx
         .update(games)
@@ -128,6 +178,15 @@ export async function ensureFixedGame(): Promise<Game> {
           if (!target) throw new Error(`No existe el objetivo social del puesto ${task.meta.profile.targetPlayerId}.`);
           meta = { ...task.meta, profile: { ...task.meta.profile, targetPlayerId: target.id } };
         }
+
+        // Volver a aplicar la edición del juez o la foto subida de esta posición,
+        // pero solo si el tipo de prueba sigue siendo el mismo.
+        const saved = preserved.get(`${task.playerId}:${task.stepIndex}`);
+        const keep = saved && saved.typeSlug === task.typeSlug ? saved : undefined;
+        if (keep?.image && meta.puzzle) {
+          meta = { ...meta, puzzle: { ...meta.puzzle, image: keep.image } };
+        }
+
         return {
           gameId: game.id,
           playerId: player.id,
@@ -136,14 +195,15 @@ export async function ensureFixedGame(): Promise<Game> {
           typeSlug: task.typeSlug,
           typeName: task.typeName,
           icon: task.icon,
-          title: task.title,
-          prompt: task.prompt,
-          answer: task.answer,
+          title: keep?.edited ? keep.title : task.title,
+          prompt: keep?.edited ? keep.prompt : task.prompt,
+          answer: keep?.edited ? keep.answer : task.answer,
           hint: task.hint,
-          judgeNote: task.judgeNote,
+          judgeNote: keep?.edited ? keep.judgeNote : task.judgeNote,
           requiresJudge: task.requiresJudge,
           needsSetup: task.needsSetup,
           meta,
+          edited: keep?.edited ?? false,
         };
       });
       await tx.insert(tasks).values(rows);

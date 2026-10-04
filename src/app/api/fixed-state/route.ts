@@ -1,4 +1,4 @@
-import { ensureFixedGame, originalTaskFor } from "@/lib/fixed-game";
+import { ensureFixedGame } from "@/lib/fixed-game";
 import { FIXED_GAME_CODE } from "@/lib/fixed-plan";
 import { getGameState } from "@/lib/queries";
 import { setupErrorResponse } from "@/lib/setup-error";
@@ -14,20 +14,9 @@ export async function GET() {
       return Response.json({ error: "No se pudo cargar la partida fija" }, { status: 500 });
     }
 
-    // Marca las pruebas cuyo texto se editó desde /judge/edit.
-    const players = state.players.map((player) => ({
-      ...player,
-      tasks: player.tasks.map((task) => {
-        const original = originalTaskFor(player.slot, task.stepIndex);
-        const edited = original
-          ? original.title !== task.title ||
-            original.prompt !== task.prompt ||
-            original.answer !== task.answer ||
-            original.hint !== task.hint
-          : false;
-        return { ...task, edited };
-      }),
-    }));
+    // La columna `edited` de la base de datos es la fuente de verdad: es la que se
+    // conserva aunque cambie la versión del plan.
+    const players = state.players;
 
     return Response.json({
       game: {

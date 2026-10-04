@@ -71,6 +71,8 @@ export const tasks = pgTable(
     prompt: text("prompt").notNull(),
     answer: text("answer").notNull(),
     hint: text("hint").notNull().default(""),
+    /** true si un juez editó esta prueba: se conserva aunque cambie la versión del plan. */
+    edited: boolean("edited").notNull().default(false),
     judgeNote: text("judge_note").notNull().default(""),
     requiresJudge: boolean("requires_judge").notNull().default(false),
     needsSetup: boolean("needs_setup").notNull().default(false),

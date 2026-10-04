@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS "tasks" (
   "prompt" text NOT NULL,
   "answer" text NOT NULL,
   "hint" text DEFAULT '' NOT NULL,
+  "edited" boolean DEFAULT false NOT NULL,
   "judge_note" text DEFAULT '' NOT NULL,
   "requires_judge" boolean DEFAULT false NOT NULL,
   "needs_setup" boolean DEFAULT false NOT NULL,

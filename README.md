@@ -305,6 +305,31 @@ Las tarjetas impresas **no llevan ninguna URL**: el enlace va dentro del chip.
 
 ---
 
+## 🤖 Simular todos los enlaces (la forma rápida)
+
+¿Quieres comprobar los 420 enlaces de golpe, sin iniciar sesión en cada persona ni seguir el
+orden uno a uno? Abre en tu web:
+
+```
+https://TU-DOMINIO.vercel.app/judge/autotest
+```
+
+y pulsa **«▶ Simular todas las tarjetas»**. En unos segundos la app responde las **420
+tarjetas**, jugador por jugador, en el orden exacto de cada uno. Te muestra por persona cuántas
+responde (15/15) y la ruta que siguió, dejando la confirmación de que:
+
+- las 420 tarjetas son únicas y ningún número está compartido entre dos jugadores;
+- cada jugador tiene sus 15 pasos, sin saltos ni huecos;
+- todas las respuestas coinciden con tu chuleta.
+
+> **No toca nada:** la simulación no cambia ni tu progreso ni el de los jugadores. Solo es un
+> ensayo. Si alguna respuesta está vacía, te la marca para que la edites y vuelvas a simular.
+
+También sigue disponible la lista con los 15 enlaces de cada persona en `/judge/links` para
+probar a mano. Los números de tarjeta son los mismos en las dos formas.
+
+---
+
 ## 🧪 Probar los 28 recorridos
 
 Abre:
@@ -430,6 +455,30 @@ la **Fase Final**: dos minijuegos de velocidad y reflejos, y una clasificación 
 
 > La fase final **no toca las 420 tarjetas**. Se juega al terminar el recorrido, así que el
 > material impreso sigue siendo válido.
+
+---
+
+## ¿Subir código borra mis preguntas editadas?
+
+**No.** Tus ediciones y las fotos que subas se guardan en la base de datos (Neon), no en el
+código. Al subir una versión nueva a GitHub y redesplegar en Vercel:
+
+- Las pruebas que **hayas editado** desde `/judge/edit` se conservan tal cual.
+- Las **fotos del puzzle** que hayas subido se conservan.
+- Las pruebas que **no** tocaste se actualizan al contenido nuevo del código.
+- Las 420 tarjetas, los recorridos y el progreso no cambian.
+
+Esto funciona incluso cuando una actualización cambia la «versión del plan»: antes de regenerar,
+el arranque guarda tus ediciones (marcadas en la base de datos) y tus fotos, y las vuelve a
+aplicar. Cada prueba editada se marca con la etiqueta **«editada»** en el panel; si pulsas
+**«Restaurar original»**, esa prueba vuelve al texto del código y deja de estar protegida.
+
+> Matiz: una edición solo se puede reaplicar si la prueba sigue siendo del **mismo tipo**. Si una
+> actualización cambia por completo el tipo de una prueba (algo que ya no va a pasar en esta
+> versión final), una edición antigua de esa posición no encajaría.
+
+Comprobado con `scripts/test-edit-preservation.ts`, que edita una pregunta, sube una foto,
+simula una actualización de versión y verifica que todo sigue ahí.
 
 ---
 

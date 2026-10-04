@@ -52,6 +52,9 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     patch.needsSetup = patch.answer === "";
   }
 
+  // Marca la prueba como editada: así se conserva aunque cambie la versión del plan.
+  patch.edited = true;
+
   const [updated] = await db.update(tasks).set(patch).where(eq(tasks.id, taskId)).returning();
 
   return Response.json({
@@ -61,7 +64,6 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       title: updated.title,
       prompt: updated.prompt,
       answer: updated.answer,
-      hint: updated.hint,
       judgeNote: updated.judgeNote,
       needsSetup: updated.needsSetup,
       meta: updated.meta,

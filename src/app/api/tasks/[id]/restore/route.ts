@@ -53,10 +53,11 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
       title: original.title,
       prompt: original.prompt,
       answer: original.answer,
-      hint: original.hint,
+      hint: "",
       judgeNote: original.judgeNote,
       meta,
       needsSetup: original.needsSetup,
+      edited: false,
     })
     .where(eq(tasks.id, taskId))
     .returning();
@@ -68,7 +69,6 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
       title: updated.title,
       prompt: updated.prompt,
       answer: updated.answer,
-      hint: updated.hint,
       judgeNote: updated.judgeNote,
       needsSetup: updated.needsSetup,
       meta: updated.meta,
