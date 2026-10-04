@@ -173,10 +173,16 @@ export default function JudgeDashboard() {
             🔗 Enlaces de prueba (420)
           </Link>
           <Link
-            href="/judge/autotest"
+            href="/judge/test"
             className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 font-bold text-emerald-200 hover:bg-emerald-500/20"
           >
-            🤖 Simular todos los enlaces
+            🧪 Probar recorrido manualmente
+          </Link>
+          <Link
+            href="/judge/autotest"
+            className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-bold text-slate-400 hover:border-slate-500"
+          >
+            🤖 Chequeo técnico 420
           </Link>
           <Link
             href="/ranking"

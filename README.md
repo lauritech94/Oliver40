@@ -305,7 +305,26 @@ Las tarjetas impresas **no llevan ninguna URL**: el enlace va dentro del chip.
 
 ---
 
-## 🤖 Simular todos los enlaces (la forma rápida)
+## 🧪 Probar tú un recorrido entero sin abrir 15 enlaces
+
+Abre:
+
+```
+https://TU-DOMINIO.vercel.app/judge/test
+```
+
+Elige una persona y contesta sus **15 pruebas en una sola pantalla**, avanzando con «Siguiente».
+No tienes que iniciar/cerrar sesiones ni abrir enlaces. Incluye el puzzle interactivo y la prueba
+de memoria con el cajetín oculto mientras se ve la secuencia. Las fotos se marcan como juez.
+
+Después de cada prueba puedes valorarla como **Fácil / Media / Difícil**. Al final muestra un
+resumen de dificultad del recorrido. Si te atascas, «Ver respuesta» permite avanzar y valorar
+igualmente. Esas valoraciones son solo del ensayo en el navegador: no cambian las preguntas,
+los recorridos ni el progreso real.
+
+---
+
+## 🤖 Chequeo técnico de los 420 enlaces
 
 ¿Quieres comprobar los 420 enlaces de golpe, sin iniciar sesión en cada persona ni seguir el
 orden uno a uno? Abre en tu web:
