@@ -35,6 +35,75 @@ export type TaskView = Task & { effectiveAnswer: string };
 
 export type PlayerRow = PublicPlayer & { tasks: TaskView[] };
 
+/** Campos comunes que necesitan las pantallas de jueces. */
+export type TaskLite = {
+  id: number;
+  playerId: number;
+  stepIndex: number;
+  cardNumber: number;
+  typeSlug: string;
+  typeName: string;
+  icon: string;
+  title: string;
+  requiresJudge: boolean;
+  needsSetup: boolean;
+  attempts: number;
+  peeks: number;
+  hintUsed: boolean;
+  solvedAt: Date | null;
+  solvedByJudge: boolean;
+  edited: boolean;
+  effectiveAnswer: string;
+  answer: string;
+  judgeNote: string;
+  meta: { profile?: Task["meta"]["profile"] };
+};
+
+export type PanelPlayer = PublicPlayer & { tasks: TaskLite[] };
+
+/** Panel: sin enunciados ni datos interactivos; ahorra el 80% del peso. */
+export function toTaskLite(task: TaskView): TaskLite {
+  return {
+    id: task.id,
+    playerId: task.playerId,
+    stepIndex: task.stepIndex,
+    cardNumber: task.cardNumber,
+    typeSlug: task.typeSlug,
+    typeName: task.typeName,
+    icon: task.icon,
+    title: task.title,
+    requiresJudge: task.requiresJudge,
+    needsSetup: task.needsSetup,
+    attempts: task.attempts,
+    peeks: task.peeks,
+    hintUsed: task.hintUsed,
+    solvedAt: task.solvedAt,
+    solvedByJudge: task.solvedByJudge,
+    edited: task.edited,
+    effectiveAnswer: task.effectiveAnswer,
+    answer: task.answer,
+    judgeNote: task.judgeNote,
+    meta: { profile: task.meta?.profile },
+  };
+}
+
+/** Editor: añade el enunciado completo y el contenido del juego. */
+export function toEditorTask(task: TaskView) {
+  return { ...toTaskLite(task), prompt: task.prompt, meta: publicPuzzleMeta(task.id, task.meta) };
+}
+
+/** Resuelve una lista de tareas, aplicando las fichas sociales de manera segura. */
+export function resolveTaskViews(taskRows: Task[], playerRows: PublicPlayer[]): TaskView[] {
+  return taskRows.map((stored) => {
+    const task: Task = { ...stored, meta: publicPuzzleMeta(stored.id, stored.meta) };
+    const link = task.meta?.profile;
+    if (!link || task.answer.trim()) return { ...task, effectiveAnswer: task.answer };
+    const target = playerRows.find((p) => p.id === link.targetPlayerId);
+    const value = (target?.profile?.[link.field] ?? "").trim();
+    return { ...task, effectiveAnswer: value, needsSetup: !value };
+  });
+}
+
 export type GameState = {
   game: Game;
   players: PlayerRow[];
@@ -57,20 +126,7 @@ export async function getGameState(code: string): Promise<GameState | null> {
     .orderBy(asc(tasks.playerId), asc(tasks.stepIndex));
 
   // Una respuesta fija escrita por el juez siempre manda sobre la ficha.
-  const resolve = (stored: Task): TaskView => {
-    // La foto se sirve por separado para no repetir imágenes grandes en el JSON del panel.
-    const task: Task = {
-      ...stored,
-      meta: publicPuzzleMeta(stored.id, stored.meta),
-    };
-    const link = task.meta?.profile;
-    if (!link || task.answer.trim()) {
-      return { ...task, effectiveAnswer: task.answer };
-    }
-    const target = playerRows.find((p) => p.id === link.targetPlayerId);
-    const value = (target?.profile?.[link.field] ?? "").trim();
-    return { ...task, effectiveAnswer: value, needsSetup: !value };
-  };
+  const resolved = resolveTaskViews(taskRows, playerRows);
 
   return {
     game,
@@ -84,7 +140,25 @@ export async function getGameState(code: string): Promise<GameState | null> {
       currentStep: p.currentStep,
       startedAt: p.startedAt,
       finishedAt: p.finishedAt,
-      tasks: taskRows.filter((t) => t.playerId === p.id).map(resolve),
+      tasks: resolved.filter((t) => t.playerId === p.id),
+    })),
+  };
+}
+
+/** Solo lo necesario para pintar el panel: sin enunciados ni juegos completos. */
+export type PanelState = {
+  game: Game;
+  players: PanelPlayer[];
+};
+
+export async function getPanelState(code: string): Promise<PanelState | null> {
+  const state = await getGameState(code);
+  if (!state) return null;
+  return {
+    game: state.game,
+    players: state.players.map((player) => ({
+      ...player,
+      tasks: player.tasks.map(toTaskLite),
     })),
   };
 }

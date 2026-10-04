@@ -414,7 +414,7 @@ export function compoundDraft(c: Compound): Draft {
   steps.push(`${c.parts.length + 1}) Junta todo, en ese orden.`);
   return {
     title: "Fórmula de palabras",
-    prompt: `Sigue los pasos para formar una palabra (sin tildes):\n\n${steps.join("\n")}\n\nEscribe la palabra resultante.`, 
+    prompt: `Sigue los pasos para formar una palabra (sin tildes):\n\n${steps.join("\n")}\n\nEscribe la palabra resultante.`,
     answer: c.parts.map(partValue).join("").toLowerCase(),
     hint: `Es ${c.cat}. Ve apuntando cada trozo en un papel.`,
   };

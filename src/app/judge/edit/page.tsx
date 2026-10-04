@@ -25,18 +25,23 @@ type TaskRow = {
   meta: { profile?: { targetPlayerId: number; field: string } };
 };
 
-type PlayerRow = {
+type PlayerInfo = {
   id: number;
   name: string;
   emoji: string;
   slot: number;
-  tasks: TaskRow[];
 };
 
-type GameState = {
+type EditorResponse = {
+  total: number;
+  offset: number;
+  limit: number;
+  tasks: TaskRow[];
+  players: PlayerInfo[];
   game: { planVersion: string; editedCount: number };
-  players: PlayerRow[];
 };
+
+const BATCH = 40;
 
 /** Dónde está el texto original de cada tipo, por si prefieres editarlo en el código. */
 const SOURCE: Record<string, { file: string; note: string }> = {
@@ -62,7 +67,13 @@ const sourceOf = (slug: string) => SOURCE[slug] ?? SOURCE[slug.replace("_", "-")
 type Editable = { title: string; prompt: string; answer: string; judgeNote: string };
 
 export default function JudgeEditPage() {
-  const [state, setState] = useState<GameState | null>(null);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
+  const [gameInfo, setGameInfo] = useState({ planVersion: "", editedCount: 0 });
+  const [total, setTotal] = useState(0);
+  const [loaded, setLoaded] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [playerFilter, setPlayerFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -74,50 +85,58 @@ export default function JudgeEditPage() {
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
-    const res = await fetch("/api/fixed-state", { cache: "no-store" });
-    if (!res.ok) {
-      setError("No se pudo cargar la partida. ¿Preparaste la base de datos en /setup?");
-      return;
+  /** Los filtros se aplican sobre el lote ya descargado: la búsqueda también. */
+  const rows = useMemo(() => {
+    const q = search.trim().toLocaleLowerCase("es");
+    const nameOf = new Map(players.map((p) => [p.id, p] as const));
+    return tasks
+      .filter((task) => {
+        if (playerFilter !== "all" && String(task.playerId) !== playerFilter) return false;
+        if (typeFilter !== "all" && task.typeSlug !== typeFilter) return false;
+        if (onlyEdited && !task.edited) return false;
+        if (q) {
+          const owner = nameOf.get(task.playerId);
+          const haystack = `${task.title} ${task.prompt} ${task.answer} ${task.typeName} ${owner?.name ?? ""} ${task.cardNumber}`;
+          if (!haystack.toLocaleLowerCase("es").includes(q)) return false;
+        }
+        return true;
+      })
+      .map((task) => ({ player: nameOf.get(task.playerId), task }))
+      .filter((row): row is { player: PlayerInfo; task: TaskRow } => Boolean(row.player))
+      .sort((a, b) => a.task.cardNumber - b.task.cardNumber);
+  }, [tasks, players, playerFilter, typeFilter, onlyEdited, search]);
+
+  const types = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const task of tasks) map.set(task.typeSlug, `${task.icon} ${task.typeName}`);
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
+  }, [tasks]);
+
+  const loadBatch = useCallback(async (offset: number, replace: boolean) => {
+    if (replace) setLoading(true);
+    else setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/judge/editor-state?offset=${offset}&limit=${BATCH}`, {
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => null)) as EditorResponse & { error?: string };
+      if (!res.ok || !data?.tasks) throw new Error(data?.error ?? "No se pudieron cargar las pruebas.");
+      setPlayers(data.players);
+      setGameInfo(data.game);
+      setTotal(data.total);
+      setTasks((previous) => (replace ? data.tasks : [...previous, ...data.tasks]));
+      setLoaded(offset + data.tasks.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cargar.");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
-    setState((await res.json()) as GameState);
-    setError("");
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const types = useMemo(() => {
-    if (!state) return [];
-    const map = new Map<string, string>();
-    for (const p of state.players) {
-      for (const t of p.tasks) map.set(t.typeSlug, `${t.icon} ${t.typeName}`);
-    }
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
-  }, [state]);
-
-  const rows = useMemo(() => {
-    if (!state) return [];
-    const q = search.trim().toLocaleLowerCase("es");
-    const out: { player: PlayerRow; task: TaskRow }[] = [];
-    for (const player of state.players) {
-      if (playerFilter !== "all" && String(player.id) !== playerFilter) continue;
-      for (const task of player.tasks) {
-        if (typeFilter !== "all" && task.typeSlug !== typeFilter) continue;
-        if (onlyEdited && !task.edited) continue;
-        if (
-          q &&
-          !`${task.title} ${task.prompt} ${task.answer} ${task.typeName} ${player.name} ${task.cardNumber}`
-            .toLocaleLowerCase("es")
-            .includes(q)
-        )
-          continue;
-        out.push({ player, task });
-      }
-    }
-    return out.sort((a, b) => a.task.cardNumber - b.task.cardNumber);
-  }, [state, playerFilter, typeFilter, onlyEdited, search]);
+    void loadBatch(0, true);
+  }, [loadBatch]);
 
   /** Devuelve una prueba al texto original del plan fijo. */
   async function restore(task: TaskRow) {
@@ -127,7 +146,7 @@ export default function JudgeEditPage() {
       const res = await fetch(`/api/tasks/${task.id}/restore`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "No se pudo restaurar");
-      await load();
+      await loadBatch(0, true);
       setDraft(null);
       setOpenId(null);
     } catch (err) {
@@ -165,7 +184,7 @@ export default function JudgeEditPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "No se pudo guardar");
       // Recargar desde el servidor para que el marcador de «editada» sea exacto.
-      await load();
+      await loadBatch(0, true);
       setSavedId(task.id);
       setTimeout(() => setSavedId(null), 2000);
     } catch (err) {
@@ -175,7 +194,7 @@ export default function JudgeEditPage() {
     }
   }
 
-  if (!state) {
+  if (loading && tasks.length === 0) {
     return (
       <main className="flex min-h-screen items-center justify-center px-5 text-slate-400">
         {error || "Cargando las 420 pruebas…"}
@@ -214,7 +233,7 @@ export default function JudgeEditPage() {
           className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
         >
           <option value="all">Los 28 jugadores</option>
-          {state.players.map((p) => (
+          {players.map((p) => (
             <option key={p.id} value={String(p.id)}>
               J{String(p.slot).padStart(2, "0")} · {p.name}
             </option>
@@ -253,10 +272,10 @@ export default function JudgeEditPage() {
           Ver solo las que he modificado
         </label>
         <p className="text-xs text-slate-500">
-          Mostrando {rows.length} de 420
-          {state.game.editedCount > 0 && (
+          Mostrando {rows.length} de {total}
+          {gameInfo.editedCount > 0 && (
             <span className="ml-2 rounded-full bg-fuchsia-500/15 px-2 py-0.5 font-semibold text-fuchsia-300">
-              ✏️ {state.game.editedCount} modificada{state.game.editedCount === 1 ? "" : "s"}
+              ✏️ {gameInfo.editedCount} modificada{gameInfo.editedCount === 1 ? "" : "s"}
             </span>
           )}
         </p>
@@ -412,8 +431,25 @@ export default function JudgeEditPage() {
         })}
       </div>
 
-      {rows.length === 0 && (
+      {rows.length === 0 && !loading && (
         <p className="mt-10 text-center text-slate-500">Ninguna prueba coincide con el filtro.</p>
+      )}
+
+      {loaded < total && !search.trim() && playerFilter === "all" && typeFilter === "all" && !onlyEdited && (
+        <button
+          onClick={() => void loadBatch(loaded, false)}
+          disabled={loadingMore}
+          className="mt-5 w-full rounded-xl border border-slate-700 px-5 py-3 font-bold text-slate-300 hover:border-fuchsia-400 hover:text-white disabled:opacity-50"
+        >
+          {loadingMore ? "Cargando…" : `Mostrar más (quedan ${total - loaded})`}
+        </button>
+      )}
+
+      {loaded < total && (search.trim() || playerFilter !== "all" || typeFilter !== "all" || onlyEdited) && (
+        <p className="mt-5 text-center text-xs text-slate-500">
+          Los filtros se aplican sobre las {loaded} pruebas cargadas. Quita el filtro y pulsa
+          «Mostrar más» para cargar el resto.
+        </p>
       )}
     </main>
   );
