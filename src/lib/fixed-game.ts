@@ -15,6 +15,17 @@ export function originalTaskFor(
   return FIXED_PLAN.find((task) => task.playerId === slot && task.stepIndex === stepIndex);
 }
 
+/** Estado ya validado en esta instancia del servidor: evita repetir migraciones y validaciones. */
+type CachedGame = { id: number; planVersion: string };
+
+let cachedGame: CachedGame | null = null;
+let pendingSetup: Promise<Game> | null = null;
+
+/** Invalida la caché de arranque si cambian los datos desde fuera. */
+export function clearFixedGameCache() {
+  cachedGame = null;
+}
+
 type PreservedTask = {
   title: string;
   prompt: string;
@@ -27,6 +38,30 @@ type PreservedTask = {
 
 /** Crea la única partida y sus 420 tareas de forma idempotente y segura ante concurrencia. */
 export async function ensureFixedGame(): Promise<Game> {
+  // Ruta rápida: si esta instancia ya validó el plan actual, solo hay que leer la fila.
+  // Evita la transacción, el bloqueo y las migraciones en cada petición.
+  if (cachedGame && cachedGame.planVersion === FIXED_PLAN_VERSION) {
+    try {
+      const [game] = await db
+        .select()
+        .from(games)
+        .where(eq(games.id, cachedGame.id))
+        .limit(1);
+      if (game && game.planVersion === FIXED_PLAN_VERSION) return game;
+    } catch {
+      // Si falla la lectura, se revalida de abajo como siempre.
+    }
+    cachedGame = null;
+  }
+  if (pendingSetup) return pendingSetup;
+
+  pendingSetup = setupFixedGame().finally(() => {
+    pendingSetup = null;
+  });
+  return pendingSetup;
+}
+
+async function setupFixedGame(): Promise<Game> {
   return db.transaction(async (tx) => {
     // Una sola petición inicializa el plan aunque los 28 jugadores escaneen el QR a la vez.
     await tx.execute(sql`select pg_advisory_xact_lock(28154201)`);
@@ -344,7 +379,8 @@ export async function ensureFixedGame(): Promise<Game> {
       .set({ status: "running", cardPoolSize: FIXED_CARD_COUNT })
       .where(eq(games.id, game.id))
       .returning();
+
+    cachedGame = { id: updated.id, planVersion: updated.planVersion };
     return updated;
   });
 }
-
